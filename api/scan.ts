@@ -241,15 +241,29 @@ async function getDocument(
     // Fail fast on redirect targets: re-validate scheme/host/port + DNS
     await resolvePublic(current.hostname);
     const startedAt = performance.now();
-    const res = await ufetch(current.toString(), {
-      dispatcher: agent,
-      redirect: "manual",
-      signal: AbortSignal.any([signal, AbortSignal.timeout(FETCH_TIMEOUT_MS)]),
-      headers: {
-        "User-Agent": BOT_UA,
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-    });
+    let res: UResponse;
+    try {
+      res = await ufetch(current.toString(), {
+        dispatcher: agent,
+        redirect: "manual",
+        signal: AbortSignal.any([signal, AbortSignal.timeout(FETCH_TIMEOUT_MS)]),
+        headers: {
+          "User-Agent": BOT_UA,
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+      });
+    } catch (e) {
+      const name = (e as Error)?.name || "";
+      if (name === "AbortError" || name === "TimeoutError") {
+        throw new ScanError("Scan timed out.", 504);
+      }
+      throw new ScanError(
+        current.protocol === "https:"
+          ? "Couldn't establish a secure connection — the site may be down, or its TLS certificate may be expired or invalid."
+          : "Couldn't reach the site — it may be down or blocking automated requests.",
+        502
+      );
+    }
     const status = res.status;
     if (status >= 300 && status < 400) {
       const loc = res.headers.get("location");
@@ -712,7 +726,7 @@ async function runChecks(inp: AuditInput): Promise<Check[]> {
     h1n === 1
       ? c("single-h1", "Single H1", "pass", "1", "One H1 gives the page a clear topic.", "No action needed.", 2)
       : h1n === 0
-        ? c("single-h1", "No H1 heading", "fail", "0", "No H1 — search engines and screen readers miss the page's main topic.", "Add exactly one descriptive <h1>.", 2)
+        ? c("single-h1", "No H1 heading", "fail", "0", "No H1 in the raw HTML — search engines and screen readers miss the page's main topic. (JavaScript isn't executed, so client-rendered headings aren't seen.)", "Add exactly one descriptive <h1> to the server-rendered HTML.", 2)
         : c("single-h1", "Multiple H1s", "warn", `${h1n}`, `${h1n} H1s dilute the page's topic signal.`, "Keep exactly one <h1> per page.", 2)
   );
 
