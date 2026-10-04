@@ -1,0 +1,82 @@
+@import "@fontsource-variable/fraunces";
+@import "@fontsource-variable/inter";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f7f3ea;
+  --color-surface: #ffffff;
+  --color-surface-raised: #fffdf7;
+  --color-ink: #1c1915;
+  --color-ink-2: #4a443c;
+  --color-muted: #8c857a;
+  --color-accent: #c93a1b;
+  --color-accent-hover: #a92f14;
+  --color-accent-deep: #7f230f;
+  --color-success: #2e7d4f;
+  --color-warning: #a96f1b;
+  --color-line: #e5dfd0;
+  --color-line-strong: #d3cab4;
+
+  --font-display: "Fraunces", "Georgia", serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Grade stamp: slight rotation, stamped feel */
+.stamp {
+  transform: rotate(-2deg);
+}
+
+/* Redacted paywall rows */
+.redacted-detail {
+  filter: blur(4px);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Eyebrow micro-labels */
+.eyebrow {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
