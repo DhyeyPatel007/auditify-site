@@ -28,6 +28,16 @@ type Props = {
   onUnlock: () => void;
 };
 
+// The input renders a decorative "https://" prefix span, so the value itself
+// must never contain a protocol — otherwise pasting a full URL shows it twice.
+function stripProtocol(value: string): string {
+  return value.replace(/^https?:\/\//i, "");
+}
+
+function ensureProtocol(value: string): string {
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+}
+
 const SCAN_STEPS = [
   "Resolving host…",
   "Checking TLS & security headers…",
@@ -47,6 +57,7 @@ export function Scanner({ onUnlock }: Props) {
     e.preventDefault();
     const trimmed = url.trim();
     if (!trimmed) return;
+    const target = ensureProtocol(trimmed);
     setState("loading");
     setError(null);
     setResult(null);
@@ -59,7 +70,7 @@ export function Scanner({ onUnlock }: Props) {
       const res = await fetch("/api/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: trimmed }),
+        body: JSON.stringify({ url: target }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -102,7 +113,19 @@ export function Scanner({ onUnlock }: Props) {
               autoComplete="url"
               placeholder="example.com"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => setUrl(stripProtocol(e.target.value))}
+              onPaste={(e) => {
+                e.preventDefault();
+                const pasted = stripProtocol(
+                  e.clipboardData.getData("text")
+                );
+                const el = e.currentTarget;
+                const start = el.selectionStart ?? url.length;
+                const end = el.selectionEnd ?? url.length;
+                setUrl(
+                  stripProtocol(url.slice(0, start) + pasted + url.slice(end))
+                );
+              }}
               disabled={state === "loading"}
               className="h-[52px] w-full rounded-lg border border-line-strong bg-surface-raised pl-[76px] pr-4 font-mono text-[15px] text-ink placeholder:text-muted focus:border-ink disabled:opacity-60"
               aria-describedby="scan-hint"

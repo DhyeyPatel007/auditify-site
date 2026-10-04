@@ -7,7 +7,7 @@ const STEPS = [
   {
     n: "02",
     title: "Get your score.",
-    body: "We run ~100 checks and return a score with the three issues that matter most, free.",
+    body: "We run 35 checks and return a score with the three issues that matter most, free.",
   },
   {
     n: "03",

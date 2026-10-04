@@ -30,8 +30,8 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: "Legal",
     links: [
-      { label: "Privacy", href: "#" },
-      { label: "Terms", href: "#" },
+      { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
       { label: "Security", href: "#" },
     ],
   },
@@ -84,13 +84,13 @@ export function Footer() {
             Proudly made in India
           </p>
           <p className="text-[13px] text-ink-2">
-            <a href="#" className="transition-colors hover:text-ink">
+            <a href="/terms" className="transition-colors hover:text-ink">
               Terms
             </a>
             <span aria-hidden="true" className="mx-2 text-line-strong">
               ·
             </span>
-            <a href="#" className="transition-colors hover:text-ink">
+            <a href="/privacy" className="transition-colors hover:text-ink">
               Privacy
             </a>
           </p>

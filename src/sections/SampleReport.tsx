@@ -90,7 +90,7 @@ export function SampleReport({ onUnlock }: { onUnlock: () => void }) {
                 Unlock full report — $24
               </button>
               <p className="text-[13px] text-ink-2">
-                One-time · full PDF · all ~100 checks
+                One-time · full PDF · all 35 checks
               </p>
             </div>
           </div>

@@ -80,3 +80,33 @@ body {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+/* Legal pages: report-card typography */
+.legal-body h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
+  margin: 2.25rem 0 0.75rem;
+}
+.legal-body h2:first-child {
+  margin-top: 0;
+}
+.legal-body p,
+.legal-body ul {
+  font-size: 1.02rem;
+  line-height: 1.75;
+  color: var(--color-ink-2);
+  margin: 0 0 1rem;
+}
+.legal-body ul {
+  list-style: disc;
+  padding-left: 1.4rem;
+}
+.legal-body li {
+  margin-bottom: 0.5rem;
+}
+.legal-body strong {
+  color: var(--color-ink);
+  font-weight: 600;
+}

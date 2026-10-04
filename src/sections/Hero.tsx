@@ -22,7 +22,7 @@ export function Hero({ onUnlock }: { onUnlock: () => void }) {
             A website audit you&rsquo;ll actually read.
           </h1>
           <p className="mt-6 max-w-[560px] text-[17px] leading-relaxed text-ink-2">
-            Auditify scans your site against ~100 checks and explains every issue in
+            Auditify scans your site against 35 checks and explains every issue in
             plain English — built for business owners who need answers, agencies who
             need reports, and developers who need specifics.
           </p>
@@ -74,7 +74,7 @@ export function Hero({ onUnlock }: { onUnlock: () => void }) {
             ))}
           </div>
           <p className="mt-4 font-mono text-[12px] uppercase tracking-[0.06em] text-muted">
-            ~100 checks · completed in 2:04
+            35 checks · completed in 2:04
           </p>
         </aside>
       </div>

@@ -26,7 +26,7 @@ const TIERS: Tier[] = [
     per: "/once",
     blurb: "For the full picture",
     bestFor: "Best for: owners fixing one site properly, once.",
-    features: ["Full ~100 checks", "Prioritized fix list with exact steps", "PDF export", "60-day access to your report"],
+    features: ["All 35 checks, unlocked", "Prioritized fix list with exact steps", "PDF export", "60-day access to your report"],
     cta: "Buy full report",
     popular: true,
     phase2: true,
