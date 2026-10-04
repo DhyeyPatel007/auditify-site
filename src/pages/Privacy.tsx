@@ -11,6 +11,11 @@ export function PrivacyPage() {
           generate for them, so you can revisit past audits.
         </li>
         <li>
+          <strong>Report email</strong> — only if you ask us to email you a
+          report. We use it to send that report, and (once our email service
+          is connected) to store it with our email provider. Nothing else.
+        </li>
+        <li>
           <strong>Account details</strong> — only if you create an account
           (name and email). The free scan doesn't require one.
         </li>
@@ -20,7 +25,11 @@ export function PrivacyPage() {
       <h2>What we never do</h2>
       <ul>
         <li>We never sell your data, to anyone, ever.</li>
-        <li>We never share your scans or account details with third parties.</li>
+        <li>
+          We never share your scans with third parties. The only exception is
+          your email address, which goes to our email provider only if you ask
+          us to email you a report.
+        </li>
         <li>We never train models on your scans.</li>
       </ul>
 

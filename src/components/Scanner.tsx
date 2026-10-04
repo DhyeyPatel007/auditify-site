@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { GradeStamp, SeverityStamp, type Grade } from "./Stamps";
+import { EmailCapture } from "./EmailCapture";
 
 type Issue = {
   id: string;
@@ -263,6 +264,13 @@ export function Scanner({ onUnlock }: Props) {
                 </div>
               </div>
             )}
+
+            <EmailCapture
+              url={result.url}
+              host={result.host}
+              score={result.score}
+              grade={result.grade}
+            />
 
             <div className="mt-6 border-t border-line pt-4">
               <button
