@@ -297,14 +297,15 @@ async function probeStatus(
   agent: Agent,
   signal: AbortSignal,
   method = "HEAD",
-  wantBody = false
+  wantBody = false,
+  timeoutMs = FETCH_TIMEOUT_MS
 ): Promise<{ status: number; headers: UHeaders; bodyText: string } | null> {
   try {
     const res = await ufetch(url, {
       dispatcher: agent,
       redirect: "manual",
       method,
-      signal: AbortSignal.any([signal, AbortSignal.timeout(FETCH_TIMEOUT_MS)]),
+      signal: AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]),
       headers: { "User-Agent": BOT_UA, Accept: "*/*" },
     });
     let bodyText = "";
@@ -458,7 +459,9 @@ type AuditInput = {
 };
 
 async function runChecks(inp: AuditInput): Promise<Check[]> {
-  const { doc, html, isHttps, host, origin, agent, signal, tls } = inp;
+  const { doc, isHttps, host, origin, agent, signal, tls } = inp;
+  // Strip HTML comments so commented-out tags can't fake a pass/fail.
+  const html = inp.html.replace(/<!--[\s\S]*?-->/g, "");
   const H = (n: string): string | null => doc.headers.get(n);
   const checks: Check[] = [];
   const metas = getMetas(html);
@@ -475,16 +478,29 @@ async function runChecks(inp: AuditInput): Promise<Check[]> {
     checks.push(c("tls-version", "TLS version unknown", "warn", "unknown", "The TLS handshake details couldn't be read, though HTTPS works.", "Verify the server negotiates TLS 1.2 or 1.3.", 4));
   }
 
-  checks.push(
-    doc.redirectCount > 0 && isHttps
-      ? c("https-enforced", "HTTPS enforced", "pass", "http → https", "Plain-HTTP requests are redirected to HTTPS.", "No action needed.", 3)
-      : isHttps
-        ? c("https-enforced", "HTTPS enforced", "pass", "https", "The site is served over HTTPS.", "No action needed.", 3)
-        : c("https-enforced", "HTTPS not enforced", "fail", "http", "Visitors can reach the insecure HTTP version of the site.", "Redirect all HTTP traffic to HTTPS (301) and add HSTS.", 3)
-  );
+  if (!isHttps) {
+    checks.push(c("https-enforced", "HTTPS not enforced", "fail", "http", "Visitors can reach the insecure HTTP version of the site.", "Redirect all HTTP traffic to HTTPS (301) and add HSTS.", 3));
+  } else if (doc.redirectCount > 0) {
+    checks.push(c("https-enforced", "HTTPS enforced", "pass", "http → https", "Plain-HTTP requests are redirected to HTTPS.", "No action needed.", 3));
+  } else {
+    // User landed directly on https:// — actively verify the http:// version
+    // can't serve content. Short timeout so a blackholed port 80 can't eat
+    // the scan budget.
+    const httpProbe = await probeStatus(`http://${host}/`, agent, signal, "HEAD", false, 3500);
+    const loc = httpProbe?.headers.get("location") || "";
+    if (httpProbe && httpProbe.status >= 300 && httpProbe.status < 400 && /^https:/i.test(loc)) {
+      checks.push(c("https-enforced", "HTTPS enforced", "pass", "http → https", "Plain-HTTP requests are redirected to HTTPS.", "No action needed.", 3));
+    } else if (httpProbe && httpProbe.status === 200) {
+      checks.push(c("https-enforced", "HTTP serves content", "fail", "http 200", "The insecure HTTP version serves the site — visitors can be downgraded.", "Redirect all HTTP traffic to HTTPS (301) and add HSTS.", 3));
+    } else {
+      checks.push(c("https-enforced", "HTTPS enforced", "pass", "https", "The site is served over HTTPS.", "No action needed.", 3));
+    }
+  }
 
   const hsts = H("strict-transport-security");
-  if (hsts && /max-age=\d+/.test(hsts)) {
+  if (!isHttps) {
+    // HSTS only works over HTTPS — the http:// fails above already cover this.
+  } else if (hsts && /max-age=\d+/.test(hsts)) {
     const age = parseInt(hsts.match(/max-age=(\d+)/)![1], 10);
     checks.push(
       age >= 31536000
@@ -508,11 +524,31 @@ async function runChecks(inp: AuditInput): Promise<Check[]> {
   }
 
   const cspVal = H("content-security-policy");
-  checks.push(
-    cspVal
-      ? c("csp", "Content-Security-Policy set", "pass", "present", "A CSP limits where scripts and resources may load from, blunting XSS.", "No action needed.", 3)
-      : c("csp", "No Content-Security-Policy", "fail", "missing", "Without a CSP, any injected script runs with full page privileges.", "Add a Content-Security-Policy header; start with default-src 'self'.", 3)
-  );
+  if (!cspVal) {
+    checks.push(c("csp", "No Content-Security-Policy", "fail", "missing", "Without a CSP, any injected script runs with full page privileges.", "Add a Content-Security-Policy header; start with default-src 'self'.", 3));
+  } else {
+    // A present-but-permissive CSP gives false confidence — check the
+    // script directive (falling back to default-src) for gaping holes.
+    const scriptDir =
+      /script-src\s+([^;]+)/i.exec(cspVal)?.[1] ??
+      /default-src\s+([^;]+)/i.exec(cspVal)?.[1] ??
+      "";
+    const weak =
+      !scriptDir
+        ? "the policy has no script-src or default-src directive"
+        : /'unsafe-inline'/.test(scriptDir)
+          ? "script-src allows 'unsafe-inline'"
+          : /'unsafe-eval'/.test(scriptDir)
+            ? "script-src allows 'unsafe-eval'"
+            : /(^|\s)\*(?=\s|;|$)/.test(scriptDir)
+              ? "script-src allows scripts from any origin (*)"
+              : null;
+    checks.push(
+      weak
+        ? c("csp", "Content-Security-Policy too permissive", "warn", "weak", `A CSP is set, but ${weak} — most XSS payloads would still run.`, "Tighten script-src: remove 'unsafe-inline'/'unsafe-eval' and wildcards.", 3)
+        : c("csp", "Content-Security-Policy set", "pass", "present", "A CSP limits where scripts and resources may load from, blunting XSS.", "No action needed.", 3)
+    );
+  }
 
   const xfo = H("x-frame-options");
   const frameAnc = cspVal && /frame-ancestors/.test(cspVal);
@@ -551,22 +587,32 @@ async function runChecks(inp: AuditInput): Promise<Check[]> {
     checks.push(c("server-header", "Server fingerprint minimal", "pass", serverHdr || "hidden", "The server doesn't advertise a version number.", "No action needed.", 1));
   }
 
-  if (isHttps) {
-    const mixed = [
+  if (!isHttps) {
+    // Mixed content is meaningless without HTTPS — the http:// fails above cover it.
+  } else {
+    // Collect subresource URLs: img/script src values plus link hrefs, plus
+    // first candidates from srcset attributes.
+    const subresources: string[] = [
       ...getLinks(html, "img"),
       ...getLinks(html, "script"),
-      ...html.matchAll(/<link\b[^>]*>/gi),
-    ]
-      .map((t) => (typeof t === "string" ? t : t[0]))
-      .map((tag) => attr(tag, "src") || attr(tag, "href") || "")
-      .filter((u) => u.toLowerCase().startsWith("http://")).length;
+    ];
+    for (const m of html.matchAll(/<link\b[^>]*>/gi)) {
+      const href = attr(m[0], "href");
+      if (href) subresources.push(href);
+    }
+    for (const m of html.matchAll(/<img\b[^>]*>/gi)) {
+      const srcset = attr(m[0], "srcset");
+      if (srcset) {
+        const first = srcset.split(",")[0]?.trim().split(/\s+/)[0];
+        if (first) subresources.push(first);
+      }
+    }
+    const mixed = subresources.filter((u) => u.toLowerCase().startsWith("http://")).length;
     checks.push(
       mixed > 0
         ? c("mixed-content", "Mixed content found", "fail", `${mixed} insecure`, `${mixed} resources load over HTTP on an HTTPS page; browsers may block them.`, "Serve every subresource over HTTPS.", 2)
         : c("mixed-content", "No mixed content", "pass", "clean", "Every subresource loads over HTTPS.", "No action needed.", 2)
     );
-  } else {
-    checks.push(c("mixed-content", "Mixed content n/a", "fail", "no https", "Mixed content can't be judged without HTTPS.", "Move the site to HTTPS first.", 2));
   }
 
   // Exposed dotfile probes (real HTTP probes against the target)
@@ -580,7 +626,7 @@ async function runChecks(inp: AuditInput): Promise<Check[]> {
       : c("git-exposed", "No exposed git metadata", "pass", "/.git/HEAD 404", "/.git/HEAD is not publicly readable.", "No action needed.", 3)
   );
   checks.push(
-    envProbe && envProbe.status === 200 && /=/.test(envProbe.bodyText)
+    envProbe && envProbe.status === 200 && /^\s*[A-Z][A-Z0-9_]{1,40}\s*=\s*\S/m.test(envProbe.bodyText)
       ? c("env-exposed", ".env file exposed", "fail", "/.env 200", "A /.env file is publicly readable — secrets and credentials may be leaking.", "Block /.env at the server immediately and rotate any exposed secrets.", 3)
       : c("env-exposed", "No exposed .env", "pass", "/.env 404", "No readable /.env file was found.", "No action needed.", 3)
   );
@@ -602,7 +648,7 @@ async function runChecks(inp: AuditInput): Promise<Check[]> {
     );
   }
 
-  const desc = metas.byName.get("description") ?? metas.byProp.get("og:description") ?? null;
+  const desc = metas.byName.get("description") ?? null;
   checks.push(
     desc
       ? c("description-present", "Meta description present", "pass", `${desc.length} ch`, "A meta description controls the search-result snippet.", "No action needed.", 2)
@@ -720,10 +766,10 @@ async function runChecks(inp: AuditInput): Promise<Check[]> {
   const ttfb = doc.ttfbMs;
   checks.push(
     ttfb < 600
-      ? c("ttfb", "Server responds fast", "pass", `${Math.round(ttfb)} ms`, "Time to first byte is snappy.", "No action needed.", 3)
+      ? c("ttfb", "Server responds fast", "pass", `${Math.round(ttfb)} ms`, "Time to first byte is snappy (measured from our scan location).", "No action needed.", 3)
       : ttfb < 1500
-        ? c("ttfb", "Server response slow", "warn", `${Math.round(ttfb)} ms`, "A slow first byte delays everything after it.", "Profile server time; add caching/CDN.", 3)
-        : c("ttfb", "Server response very slow", "fail", `${Math.round(ttfb)} ms`, "Visitors stare at a blank page.", "Fix backend latency or put a CDN in front.", 3)
+        ? c("ttfb", "Server response slow", "warn", `${Math.round(ttfb)} ms`, "A slow first byte delays everything after it (measured from our scan location — distance adds some of this).", "Profile server time; add caching/CDN.", 3)
+        : c("ttfb", "Server response very slow", "fail", `${Math.round(ttfb)} ms`, "Visitors stare at a blank page (measured from our scan location).", "Fix backend latency or put a CDN in front.", 3)
   );
 
   const alpn = tls?.alpn ?? "";
@@ -746,10 +792,7 @@ async function runChecks(inp: AuditInput): Promise<Check[]> {
   const imgSrcs = imgTags
     .map((t) => attr(t, "src"))
     .filter((s): s is string => !!s && !s.startsWith("data:"));
-  const missingAlt = imgTags.filter((t) => {
-    const a = attr(t, "alt");
-    return a === null || a.trim() === "";
-  }).length;
+  const missingAlt = imgTags.filter((t) => attr(t, "alt") === null).length;
   checks.push(
     imgTags.length === 0
       ? c("image-alt", "No images to check", "pass", "0 images", "No <img> tags found.", "No action needed.", 3)
@@ -828,13 +871,30 @@ async function runChecks(inp: AuditInput): Promise<Check[]> {
 
   if (sample.length > 0) {
     const results = await Promise.all(
-      sample.map((u) => probeStatus(u.toString(), agent, signal, "HEAD"))
+      sample.map(async (u) => {
+        const url = u.toString();
+        // Some servers reject HEAD (405/501) — fall back to GET for those.
+        let r = await probeStatus(url, agent, signal, "HEAD");
+        if (r && (r.status === 405 || r.status === 501)) {
+          r = await probeStatus(url, agent, signal, "GET");
+        }
+        return r;
+      })
     );
-    const broken = results.filter((r) => !r || r.status >= 400).length;
+    let broken = 0;
+    let skipped = 0;
+    for (const r of results) {
+      if (!r) broken++; // unreachable / timed out
+      else if (r.status === 404 || r.status === 410 || r.status >= 500) broken++;
+      else if (r.status === 401 || r.status === 403 || r.status === 429) skipped++; // bot-walled, not verifiable
+    }
+    const verifiable = sample.length - skipped;
     checks.push(
-      broken === 0
-        ? c("broken-links", "Sampled links healthy", "pass", `${sample.length}/${sample.length}`, `Checked ${sample.length} internal links — all resolve.`, "No action needed.", 3)
-        : c("broken-links", "Broken links found", "fail", `${broken} broken`, `${broken} of ${sample.length} sampled internal links return errors.`, "Fix or remove the dead links.", 3)
+      broken > 0
+        ? c("broken-links", "Broken links found", "fail", `${broken} broken`, `${broken} of ${verifiable} verifiable internal links return errors.`, "Fix or remove the dead links.", 3)
+        : verifiable === 0
+          ? c("broken-links", "Links not verifiable", "warn", "bot-walled", "Sampled links block automated checks, so they couldn't be verified.", "Verify these links manually in a browser.", 3)
+          : c("broken-links", "Sampled links healthy", "pass", `${verifiable}/${verifiable}`, `Checked ${verifiable} internal links — all resolve.`, "No action needed.", 3)
     );
   } else {
     checks.push(c("broken-links", "No internal links sampled", "pass", "n/a", "No internal links found to sample.", "No action needed.", 3));

@@ -1,0 +1,8 @@
+{
+  "example.com": {
+    "statusCode": 400,
+    "payload": {
+      "error": "That address isn't publicly reachable — private and internal networks are blocked."
+    }
+  }
+}
