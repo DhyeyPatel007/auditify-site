@@ -5,7 +5,7 @@ export function TermsPage() {
     <LegalLayout title="Terms of Service" updated="October 2026">
       <h2>What Auditify does</h2>
       <p>
-        Auditify runs free website scans — roughly a hundred checks across
+        Auditify runs free website scans — 35+ checks across
         speed, SEO, accessibility, and security — and hands you a plain-English
         stamped report of the findings. That's the whole service.
       </p>

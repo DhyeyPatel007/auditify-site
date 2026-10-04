@@ -33,9 +33,9 @@ export function PrivacyPage() {
 
       <h2>Deletion</h2>
       <p>
-        Delete your account and we delete your data — scan history and account
-        details, gone. If you scanned without an account and want a specific
-        scan removed, contact us and we'll take it down.
+        There's no account system yet, so there's nothing to delete — we don't
+        keep your personal details. If you believe a scan of your site is
+        stored somewhere it shouldn't be, contact us and we'll take it down.
       </p>
 
       <h2>Changes</h2>

@@ -7,32 +7,17 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: "Features", href: "#features" },
       { label: "Pricing", href: "#pricing" },
       { label: "Sample report", href: "#sample-report" },
-      { label: "Changelog", href: "#" },
     ],
   },
   {
     title: "Company",
-    links: [
-      { label: "About", href: "#" },
-      { label: "Blog", href: "#" },
-      { label: "Contact", href: "#" },
-      { label: "Careers", href: "#" },
-    ],
-  },
-  {
-    title: "Resources",
-    links: [
-      { label: "Help center", href: "#" },
-      { label: "Audit checklist", href: "#" },
-      { label: "Status", href: "#" },
-    ],
+    links: [{ label: "Contact", href: "mailto:dhyeypatel.work2@gmail.com" }],
   },
   {
     title: "Legal",
     links: [
       { label: "Privacy", href: "/privacy" },
       { label: "Terms", href: "/terms" },
-      { label: "Security", href: "#" },
     ],
   },
 ];
@@ -48,7 +33,7 @@ export function Footer() {
               Website audits, graded like they matter.
             </p>
           </div>
-          <nav className="grid grid-cols-2 gap-8 sm:grid-cols-4" aria-label="Footer">
+          <nav className="grid grid-cols-2 gap-8 sm:grid-cols-3" aria-label="Footer">
             {COLUMNS.map((col) => (
               <div key={col.title}>
                 <p className="eyebrow text-ink-2">{col.title}</p>
@@ -69,7 +54,7 @@ export function Footer() {
           </nav>
         </div>
         <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-line pt-6 sm:flex-row sm:items-center">
-          <p className="text-[13px] text-ink-2">© 2026 Auditify</p>
+          <p className="text-[13px] text-ink-2">© 2026 Krynex Studio · Auditify</p>
           <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-2">
             <svg viewBox="0 0 16 14" className="h-[14px] w-[16px]" aria-hidden="true">
               <path

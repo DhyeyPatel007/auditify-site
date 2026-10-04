@@ -21,7 +21,7 @@ const FAQS = [
   },
   {
     q: "What happens to my data?",
-    a: "We store your scan results and account details — nothing else. We never sell data, share it with third parties, or use your scans to train models. Delete your account and we delete your data.",
+    a: "Right now there's no account — you scan, you get your report, and we don't keep your personal details. We never sell data, share it with third parties, or use your scans to train models.",
   },
 ];
 
