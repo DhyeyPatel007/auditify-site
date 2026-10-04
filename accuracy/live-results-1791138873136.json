@@ -1,0 +1,360 @@
+{
+  "example.com": {
+    "status": 200,
+    "ms": 851,
+    "body": {
+      "url": "https://example.com/",
+      "host": "example.com",
+      "score": 70,
+      "grade": "C",
+      "checksRun": 35,
+      "durationMs": 354,
+      "summary": {
+        "pass": 18,
+        "warn": 12,
+        "fail": 5
+      },
+      "issues": [
+        {
+          "id": "csp",
+          "title": "No Content-Security-Policy",
+          "severity": "FAIL",
+          "metric": "missing",
+          "detail": "Without a CSP, any injected script runs with full page privileges.",
+          "fix": "Add a Content-Security-Policy header; start with default-src 'self'."
+        },
+        {
+          "id": "hsts",
+          "title": "No HSTS header",
+          "severity": "FAIL",
+          "metric": "missing",
+          "detail": "Without HSTS, a first-time visitor can be downgraded to HTTP by an attacker.",
+          "fix": "Send Strict-Transport-Security: max-age=63072000; includeSubDomains."
+        },
+        {
+          "id": "https-enforced",
+          "title": "HTTP serves content",
+          "severity": "FAIL",
+          "metric": "http 200",
+          "detail": "The insecure HTTP version serves the site — visitors can be downgraded.",
+          "fix": "Redirect all HTTP traffic to HTTPS (301) and add HSTS."
+        }
+      ],
+      "locked": [
+        {
+          "title": "No H1 heading",
+          "metric": "0"
+        },
+        {
+          "title": "Missing meta description",
+          "metric": "missing"
+        },
+        {
+          "title": "No clickjacking protection",
+          "metric": "missing"
+        },
+        {
+          "title": "MIME sniffing allowed",
+          "metric": "missing"
+        },
+        {
+          "title": "Title too short",
+          "metric": "14 ch"
+        },
+        {
+          "title": "No canonical URL",
+          "metric": "missing"
+        },
+        {
+          "title": "robots.txt missing",
+          "metric": "404"
+        },
+        {
+          "title": "No sitemap found",
+          "metric": "missing"
+        },
+        {
+          "title": "HTTP/1.1 only",
+          "metric": "http/1.1"
+        },
+        {
+          "title": "No Referrer-Policy",
+          "metric": "missing"
+        },
+        {
+          "title": "No Permissions-Policy",
+          "metric": "missing"
+        },
+        {
+          "title": "Open Graph tags missing",
+          "metric": "missing"
+        },
+        {
+          "title": "No Twitter card",
+          "metric": "missing"
+        },
+        {
+          "title": "No favicon",
+          "metric": "missing"
+        }
+      ]
+    }
+  },
+  "https://www.google.com": {
+    "status": 200,
+    "ms": 1004,
+    "body": {
+      "url": "https://www.google.com/",
+      "host": "www.google.com",
+      "score": 75,
+      "grade": "C",
+      "checksRun": 36,
+      "durationMs": 883,
+      "summary": {
+        "pass": 23,
+        "warn": 8,
+        "fail": 5
+      },
+      "issues": [
+        {
+          "id": "csp",
+          "title": "No Content-Security-Policy",
+          "severity": "FAIL",
+          "metric": "missing",
+          "detail": "Without a CSP, any injected script runs with full page privileges.",
+          "fix": "Add a Content-Security-Policy header; start with default-src 'self'."
+        },
+        {
+          "id": "hsts",
+          "title": "No HSTS header",
+          "severity": "FAIL",
+          "metric": "missing",
+          "detail": "Without HSTS, a first-time visitor can be downgraded to HTTP by an attacker.",
+          "fix": "Send Strict-Transport-Security: max-age=63072000; includeSubDomains."
+        },
+        {
+          "id": "https-enforced",
+          "title": "HTTP serves content",
+          "severity": "FAIL",
+          "metric": "http 200",
+          "detail": "The insecure HTTP version serves the site — visitors can be downgraded.",
+          "fix": "Redirect all HTTP traffic to HTTPS (301) and add HSTS."
+        }
+      ],
+      "locked": [
+        {
+          "title": "Viewport meta missing",
+          "metric": "missing"
+        },
+        {
+          "title": "No H1 heading",
+          "metric": "0"
+        },
+        {
+          "title": "MIME sniffing allowed",
+          "metric": "missing"
+        },
+        {
+          "title": "Title too short",
+          "metric": "6 ch"
+        },
+        {
+          "title": "No canonical URL",
+          "metric": "missing"
+        },
+        {
+          "title": "HTTP/1.1 only",
+          "metric": "http/1.1"
+        },
+        {
+          "title": "No Referrer-Policy",
+          "metric": "missing"
+        },
+        {
+          "title": "No Permissions-Policy",
+          "metric": "missing"
+        },
+        {
+          "title": "Open Graph tags missing",
+          "metric": "missing"
+        },
+        {
+          "title": "No Twitter card",
+          "metric": "missing"
+        }
+      ]
+    }
+  },
+  "https://github.com": {
+    "status": 200,
+    "ms": 894,
+    "body": {
+      "url": "https://github.com/",
+      "host": "github.com",
+      "score": 88,
+      "grade": "B",
+      "checksRun": 36,
+      "durationMs": 678,
+      "summary": {
+        "pass": 29,
+        "warn": 6,
+        "fail": 1
+      },
+      "issues": [
+        {
+          "id": "html-size",
+          "title": "HTML too heavy",
+          "severity": "FAIL",
+          "metric": "563 KB",
+          "detail": "A very heavy document hurts load on every visit.",
+          "fix": "Split the page, defer non-critical markup."
+        },
+        {
+          "id": "image-weight",
+          "title": "Image payload heavy",
+          "severity": "WARN",
+          "metric": "997 KB",
+          "detail": "Images are a large share of the page weight.",
+          "fix": "Compress and serve modern formats (WebP/AVIF)."
+        },
+        {
+          "id": "title-length",
+          "title": "Title too long",
+          "severity": "WARN",
+          "metric": "61 ch",
+          "detail": "Long titles get truncated in search results.",
+          "fix": "Trim the title to 30–60 characters."
+        }
+      ],
+      "locked": [
+        {
+          "title": "Description length off",
+          "metric": "190 ch"
+        },
+        {
+          "title": "No sitemap found",
+          "metric": "missing"
+        },
+        {
+          "title": "HTTP/1.1 only",
+          "metric": "http/1.1"
+        },
+        {
+          "title": "No Permissions-Policy",
+          "metric": "missing"
+        }
+      ]
+    }
+  },
+  "https://krynex.in": {
+    "status": 200,
+    "ms": 2210,
+    "body": {
+      "url": "https://www.krynex.in/",
+      "host": "www.krynex.in",
+      "score": 84,
+      "grade": "B",
+      "checksRun": 36,
+      "durationMs": 1603,
+      "summary": {
+        "pass": 27,
+        "warn": 7,
+        "fail": 2
+      },
+      "issues": [
+        {
+          "id": "image-weight",
+          "title": "Image payload very heavy",
+          "severity": "FAIL",
+          "metric": "11.4 MB",
+          "detail": "Images dominate the download — mobile users suffer.",
+          "fix": "Compress aggressively; lazy-load below the fold."
+        },
+        {
+          "id": "csp",
+          "title": "No Content-Security-Policy",
+          "severity": "FAIL",
+          "metric": "missing",
+          "detail": "Without a CSP, any injected script runs with full page privileges.",
+          "fix": "Add a Content-Security-Policy header; start with default-src 'self'."
+        },
+        {
+          "id": "ttfb",
+          "title": "Server response slow",
+          "severity": "WARN",
+          "metric": "784 ms",
+          "detail": "A slow first byte delays everything after it (measured from our scan location — distance adds some of this).",
+          "fix": "Profile server time; add caching/CDN."
+        }
+      ],
+      "locked": [
+        {
+          "title": "No clickjacking protection",
+          "metric": "missing"
+        },
+        {
+          "title": "MIME sniffing allowed",
+          "metric": "missing"
+        },
+        {
+          "title": "Title too short",
+          "metric": "13 ch"
+        },
+        {
+          "title": "HTTP/1.1 only",
+          "metric": "http/1.1"
+        },
+        {
+          "title": "No Referrer-Policy",
+          "metric": "missing"
+        },
+        {
+          "title": "No Permissions-Policy",
+          "metric": "missing"
+        }
+      ]
+    }
+  },
+  "https://auditify-site.vercel.app": {
+    "status": 200,
+    "ms": 445,
+    "body": {
+      "url": "https://auditify-site.vercel.app/",
+      "host": "auditify-site.vercel.app",
+      "score": 96,
+      "grade": "A",
+      "checksRun": 36,
+      "durationMs": 254,
+      "summary": {
+        "pass": 34,
+        "warn": 1,
+        "fail": 1
+      },
+      "issues": [
+        {
+          "id": "single-h1",
+          "title": "No H1 heading",
+          "severity": "FAIL",
+          "metric": "0",
+          "detail": "No H1 — search engines and screen readers miss the page's main topic.",
+          "fix": "Add exactly one descriptive <h1>."
+        },
+        {
+          "id": "http-version",
+          "title": "HTTP/1.1 only",
+          "severity": "WARN",
+          "metric": "http/1.1",
+          "detail": "HTTP/1.1 serializes requests; modern servers offer h2.",
+          "fix": "Enable HTTP/2 (or 3) on the server."
+        }
+      ],
+      "locked": []
+    }
+  },
+  "http://neverssl.com": {
+    "status": 500,
+    "body": {
+      "error": "The scan hit an unexpected error. Try again in a moment."
+    }
+  }
+}
