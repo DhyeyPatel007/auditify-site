@@ -492,7 +492,19 @@ async function runChecks(inp: AuditInput): Promise<Check[]> {
         : c("hsts", "HSTS max-age too short", "warn", `max-age ${age}`, "HSTS is set but expires quickly, leaving a window for downgrade attacks.", "Raise max-age to at least 31536000 (one year).", 3)
     );
   } else {
-    checks.push(c("hsts", "No HSTS header", "fail", "missing", "Without HSTS, a first-time visitor can be downgraded to HTTP by an attacker.", "Send Strict-Transport-Security: max-age=63072000; includeSubDomains.", 3));
+    // No HSTS header — check the Chromium preload list before failing.
+    // Preloaded domains (e.g. google.com) are protected without the header.
+    let preloaded = false;
+    try {
+      const r = await fetch(`https://hstspreload.org/api/v2/status?domain=${encodeURIComponent(host)}`, { signal: AbortSignal.timeout(4000) });
+      const j = await r.json().catch(() => null);
+      preloaded = !!(j && j.status === "preloaded");
+    } catch { /* fall through to the fail below */ }
+    checks.push(
+      preloaded
+        ? c("hsts", "HSTS preloaded", "pass", "preload list", "This domain is on the browser HSTS preload list — stronger than the header alone.", "No action needed.", 3)
+        : c("hsts", "No HSTS header", "fail", "missing", "Without HSTS, a first-time visitor can be downgraded to HTTP by an attacker.", "Send Strict-Transport-Security: max-age=63072000; includeSubDomains.", 3)
+    );
   }
 
   const cspVal = H("content-security-policy");

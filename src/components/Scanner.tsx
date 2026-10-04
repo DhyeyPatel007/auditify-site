@@ -114,6 +114,7 @@ export function Scanner({ onUnlock }: Props) {
               placeholder="example.com"
               value={url}
               onChange={(e) => setUrl(stripProtocol(e.target.value))}
+              onFocus={(e) => setUrl(stripProtocol(e.target.value))}
               onPaste={(e) => {
                 e.preventDefault();
                 const pasted = stripProtocol(
