@@ -335,6 +335,7 @@ async function probeTls(host: string): Promise<{ protocol: string; alpn: string 
       port: 443,
       servername: host,
       timeout: FETCH_TIMEOUT_MS,
+      ALPNProtocols: ["h2", "http/1.1"],
     });
     const done = (v: { protocol: string; alpn: string } | null) => {
       sock.destroy();
@@ -1053,7 +1054,7 @@ export default async function handler(req: ReqLike, res: ResLike) {
     const message =
       err instanceof ScanError
         ? err.message
-        : "The scan hit an unexpected error. Try again in a moment.";
+        : `DEBUG: ${(err as Error)?.message} | ${(err as Error)?.stack?.split("\n").slice(0, 4).join(" // ")}`;
     res.status(status).json({ error: message });
   } finally {
     try {
