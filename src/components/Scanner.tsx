@@ -98,39 +98,41 @@ export function Scanner({ onUnlock }: Props) {
           Website URL
         </label>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <div className="relative flex-1">
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-mono text-[15px] text-ink-2"
-            >
-              https://
-            </span>
-            <input
-              id="scan-url"
-              name="url"
-              type="text"
-              inputMode="url"
-              autoComplete="url"
-              placeholder="example.com"
-              value={url}
-              onChange={(e) => setUrl(stripProtocol(e.target.value))}
-              onFocus={(e) => setUrl(stripProtocol(e.target.value))}
-              onPaste={(e) => {
-                e.preventDefault();
-                const pasted = stripProtocol(
-                  e.clipboardData.getData("text")
-                );
-                const el = e.currentTarget;
-                const start = el.selectionStart ?? url.length;
-                const end = el.selectionEnd ?? url.length;
-                setUrl(
-                  stripProtocol(url.slice(0, start) + pasted + url.slice(end))
-                );
-              }}
-              disabled={state === "loading"}
-              className="h-[52px] w-full rounded-lg border border-line-strong bg-surface-raised pl-[76px] pr-4 font-mono text-[15px] text-ink placeholder:text-muted focus:border-ink disabled:opacity-60"
-              aria-describedby="scan-hint"
-            />
+          <div className="flex-1">
+            <div className="flex h-[52px] items-center rounded-lg border border-line-strong bg-surface-raised transition-colors focus-within:border-ink">
+              <span
+                aria-hidden="true"
+                className="pointer-events-none select-none pl-4 font-mono text-[15px] text-ink-2"
+              >
+                https://
+              </span>
+              <input
+                id="scan-url"
+                name="url"
+                type="text"
+                inputMode="url"
+                autoComplete="url"
+                placeholder="example.com"
+                value={url}
+                onChange={(e) => setUrl(stripProtocol(e.target.value))}
+                onFocus={(e) => setUrl(stripProtocol(e.target.value))}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const pasted = stripProtocol(
+                    e.clipboardData.getData("text")
+                  );
+                  const el = e.currentTarget;
+                  const start = el.selectionStart ?? url.length;
+                  const end = el.selectionEnd ?? url.length;
+                  setUrl(
+                    stripProtocol(url.slice(0, start) + pasted + url.slice(end))
+                  );
+                }}
+                disabled={state === "loading"}
+                className="h-full w-full bg-transparent pr-4 font-mono text-[15px] text-ink placeholder:text-muted focus:outline-none disabled:opacity-60"
+                aria-describedby="scan-hint"
+              />
+            </div>
           </div>
           <button
             type="submit"
