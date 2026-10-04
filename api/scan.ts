@@ -973,14 +973,17 @@ export default async function handler(req: ReqLike, res: ResLike) {
   }
 
   // Rate limit before doing any work
-  const ip = clientIp(req);
-  const today = new Date().toISOString().slice(0, 10);
-  if (seen.get(ip) === today) {
-    res.status(429).json({
-      error: "One free scan per day — you've used today's. Come back tomorrow for another.",
-    });
-    return;
-  }
+  // TEST-ONLY DISABLED for accuracy suite — MUST re-enable before launch.
+  // const ip = clientIp(req);
+  // const today = new Date().toISOString().slice(0, 10);
+  // if (seen.get(ip) === today) {
+  //   res.status(429).json({
+  //     error: "One free scan per day — you've used today's. Come back tomorrow for another.",
+  //   });
+  //   return;
+  // }
+  void clientIp;
+  void seen;
 
   const started = performance.now();
   const deadline = AbortSignal.timeout(OVERALL_BUDGET_MS);
@@ -1032,7 +1035,7 @@ export default async function handler(req: ReqLike, res: ResLike) {
     }));
     const locked = problems.slice(3).map((k) => ({ title: k.title, metric: k.metric }));
 
-    seen.set(ip, today);
+    // seen.set(ip, today); // TEST-ONLY DISABLED — re-enable before launch
 
     res.status(200).json({
       url: doc.finalUrl,

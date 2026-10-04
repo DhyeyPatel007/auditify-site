@@ -1,0 +1,105 @@
+{
+  "example.com": {
+    "status": 200,
+    "ms": 1275,
+    "body": {
+      "url": "https://example.com/",
+      "host": "example.com",
+      "score": 74,
+      "grade": "C",
+      "checksRun": 35,
+      "durationMs": 284,
+      "summary": {
+        "pass": 19,
+        "warn": 12,
+        "fail": 4
+      },
+      "issues": [
+        {
+          "id": "csp",
+          "title": "No Content-Security-Policy",
+          "severity": "FAIL",
+          "metric": "missing",
+          "detail": "Without a CSP, any injected script runs with full page privileges.",
+          "fix": "Add a Content-Security-Policy header; start with default-src 'self'."
+        },
+        {
+          "id": "hsts",
+          "title": "No HSTS header",
+          "severity": "FAIL",
+          "metric": "missing",
+          "detail": "Without HSTS, a first-time visitor can be downgraded to HTTP by an attacker.",
+          "fix": "Send Strict-Transport-Security: max-age=63072000; includeSubDomains."
+        },
+        {
+          "id": "single-h1",
+          "title": "No H1 heading",
+          "severity": "FAIL",
+          "metric": "0",
+          "detail": "No H1 — search engines and screen readers miss the page's main topic.",
+          "fix": "Add exactly one descriptive <h1>."
+        }
+      ],
+      "locked": [
+        {
+          "title": "Missing meta description",
+          "metric": "missing"
+        },
+        {
+          "title": "No clickjacking protection",
+          "metric": "missing"
+        },
+        {
+          "title": "MIME sniffing allowed",
+          "metric": "missing"
+        },
+        {
+          "title": "Title too short",
+          "metric": "14 ch"
+        },
+        {
+          "title": "No canonical URL",
+          "metric": "missing"
+        },
+        {
+          "title": "robots.txt missing",
+          "metric": "404"
+        },
+        {
+          "title": "No sitemap found",
+          "metric": "missing"
+        },
+        {
+          "title": "HTTP/1.1 only",
+          "metric": "http/1.1"
+        },
+        {
+          "title": "No Referrer-Policy",
+          "metric": "missing"
+        },
+        {
+          "title": "No Permissions-Policy",
+          "metric": "missing"
+        },
+        {
+          "title": "Open Graph tags missing",
+          "metric": "missing"
+        },
+        {
+          "title": "No Twitter card",
+          "metric": "missing"
+        },
+        {
+          "title": "No favicon",
+          "metric": "missing"
+        }
+      ]
+    }
+  },
+  "https://www.google.com": {
+    "status": 429,
+    "body": {
+      "error": "One free scan per day — you've used today's. Come back tomorrow for another."
+    }
+  }
+}
