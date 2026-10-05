@@ -11,11 +11,11 @@ import {
   createUserWithEmailAndPassword,
   getRedirectResult,
   onAuthStateChanged,
+  signInWithCredential,
   signInWithEmailAndPassword,
-  signInWithPopup,
-  signInWithRedirect,
   signOut,
   updateProfile,
+  type Auth,
   type User,
 } from "firebase/auth";
 import { auth, isAuthConfigured } from "../lib/firebase";
@@ -80,6 +80,74 @@ function needAuth(): NonNullable<typeof auth> {
   return auth;
 }
 
+/**
+ * Google sign-in via Google Identity Services (GIS) directly, bypassing
+ * Firebase's /__/auth/handler round-trip. We get an access token from
+ * Google and hand it to Firebase with signInWithCredential. Fewer moving
+ * parts: no handler page, no iframe, no redirect state to lose.
+ */
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        oauth2: {
+          initTokenClient: (config: {
+            client_id: string;
+            scope: string;
+            callback: (response: { access_token?: string; error?: string }) => void;
+          }) => { requestAccessToken: (opts?: { prompt?: string }) => void };
+        };
+      };
+    };
+  }
+}
+
+// Public OAuth client ID auto-created by Firebase for this project.
+// Visible in any Google OAuth URL; safe to ship in the client bundle.
+const GOOGLE_CLIENT_ID =
+  "932266314669-2hqrrst210vpog5dfa4hlu82u8frqd50.apps.googleusercontent.com";
+
+function loadGis(): Promise<void> {
+  if (window.google?.accounts?.oauth2) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Couldn't load Google sign-in. Check your connection and try again."));
+    document.head.appendChild(script);
+  });
+}
+
+async function signInWithGoogleViaGis(authInstance: Auth): Promise<void> {
+  await loadGis();
+  const accessToken = await new Promise<string>((resolve, reject) => {
+    try {
+      const client = window.google!.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: "openid email profile",
+        callback: (response) => {
+          if (response.access_token) resolve(response.access_token);
+          else {
+            // Shape it like a Firebase error so friendlyAuthError maps it.
+            const err = new Error(response.error || "popup_closed_by_user");
+            (err as { code?: string }).code =
+              response.error === "access_denied"
+                ? "auth/popup-closed-by-user"
+                : "auth/popup-closed-by-user";
+            reject(err);
+          }
+        },
+      });
+      client.requestAccessToken();
+    } catch (e) {
+      reject(e);
+    }
+  });
+  await signInWithCredential(authInstance, GoogleAuthProvider.credential(null, accessToken));
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,21 +173,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearRedirectError = useCallback(() => setRedirectError(null), []);
 
   const signInWithGoogle = useCallback(async () => {
-    // Popup keeps the whole flow on one page (no return-trip state to lose).
-    // Falls back to full-page redirect if the popup can't open.
-    try {
-      await signInWithPopup(needAuth(), new GoogleAuthProvider());
-    } catch (err) {
-      const code =
-        typeof err === "object" && err !== null && "code" in err
-          ? String((err as { code: unknown }).code)
-          : "";
-      if (code === "auth/popup-blocked" || code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
-        await signInWithRedirect(needAuth(), new GoogleAuthProvider());
-        return;
-      }
-      throw err;
-    }
+    // GIS direct flow: Google popup -> access token -> Firebase credential.
+    // Bypasses Firebase's handler/iframe/redirect round-trip entirely.
+    await signInWithGoogleViaGis(needAuth());
   }, []);
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
