@@ -46,7 +46,9 @@ export function friendlyAuthError(err: unknown): string {
     case "auth/network-request-failed":
       return "Network problem — check your connection and try again.";
     default:
-      return "Something went wrong signing you in. Try again.";
+      return code
+        ? `Something went wrong signing you in. Try again. (${code})`
+        : "Something went wrong signing you in. Try again.";
   }
 }
 

@@ -11,7 +11,7 @@ state and checkout stays "opens at launch" — nothing breaks.
 3. Enable two sign-in methods:
    - **Google** → enable, pick a support email.
    - **Email/Password** → enable.
-4. **Authentication → Settings → Authorized domains** → add `auditify-site.vercel.app`.
+4. **Authentication → Settings → Authorized domains** → add both `auditify.krynex.in` (the live domain since 2026-10-05) and `auditify-site.vercel.app` (the Vercel fallback URL). Google sign-in will fail on whichever domain is missing.
 5. **Project settings (gear) → General → Your apps → Web** (`</>`): register the
    app (nickname `auditify-site`), copy the `firebaseConfig` values.
 
