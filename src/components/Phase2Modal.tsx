@@ -50,6 +50,18 @@ export function Phase2Modal({ open, onClose, context }: Props) {
           in Phase 2. Nothing is charged, nothing is faked. The free scan above is fully
           working today.
         </p>
+        <div className="mt-4 rounded-lg border border-line bg-paper p-4 text-[14px] text-ink-2">
+          <p className="font-medium text-ink">Launch discounts</p>
+          <p className="mt-1">
+            10% off your first purchase with{" "}
+            <code className="font-mono text-[13px] text-ink">WELCOME10</code>
+          </p>
+          <p className="mt-1">
+            5% off your next one-time report with{" "}
+            <code className="font-mono text-[13px] text-ink">RETURN5</code>
+          </p>
+          <p className="mt-1 text-[13px]">Codes apply automatically at checkout.</p>
+        </div>
         <button
           type="button"
           onClick={onClose}

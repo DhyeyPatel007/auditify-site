@@ -87,7 +87,7 @@ export function SampleReport({ onUnlock }: { onUnlock: () => void }) {
                 onClick={onUnlock}
                 className="min-h-[44px] rounded-lg bg-accent px-6 py-3 text-[15px] font-medium text-white transition-colors hover:bg-accent-hover"
               >
-                Unlock full report — $24
+                Unlock full report — $15
               </button>
               <p className="text-[13px] text-ink-2">
                 One-time · full PDF · all 35+ checks

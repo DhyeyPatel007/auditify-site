@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Nav } from "./sections/Nav";
 import { Hero } from "./sections/Hero";
 import { HowItWorks } from "./sections/HowItWorks";
@@ -9,15 +9,28 @@ import { Faq } from "./sections/Faq";
 import { CtaBand } from "./sections/CtaBand";
 import { Footer } from "./sections/Footer";
 import { Phase2Modal } from "./components/Phase2Modal";
+import { AuthModal } from "./components/AuthModal";
+import { AuthProvider, useAuth } from "./auth/AuthContext";
 
-export default function App() {
+function Shell() {
+  const { user, signOutUser } = useAuth();
   const [phase2, setPhase2] = useState<{ open: boolean; context: string }>({
     open: false,
     context: "",
   });
+  const [auth, setAuth] = useState<{ open: boolean; mode: "signin" | "signup" }>({
+    open: false,
+    mode: "signin",
+  });
 
   const openPhase2 = (context: string) => setPhase2({ open: true, context });
   const closePhase2 = () => setPhase2((p) => ({ ...p, open: false }));
+  const openAuth = (mode: "signin" | "signup") => setAuth({ open: true, mode });
+  const closeAuth = () => setAuth((a) => ({ ...a, open: false }));
+
+  const handleSignOut = useCallback(async () => {
+    await signOutUser();
+  }, [signOutUser]);
 
   return (
     <div id="top" className="min-h-screen bg-paper text-ink">
@@ -27,7 +40,11 @@ export default function App() {
       >
         Skip to the free audit
       </a>
-      <Nav />
+      <Nav
+        user={user ? { email: user.email ?? "", name: user.displayName } : null}
+        onSignIn={() => openAuth("signin")}
+        onSignOut={handleSignOut}
+      />
       <main>
         <Hero onUnlock={() => openPhase2("Full report")} />
         <HowItWorks />
@@ -43,6 +60,15 @@ export default function App() {
         context={phase2.context}
         onClose={closePhase2}
       />
+      <AuthModal open={auth.open} mode={auth.mode} onClose={closeAuth} />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Shell />
+    </AuthProvider>
   );
 }

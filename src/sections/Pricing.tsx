@@ -1,3 +1,5 @@
+import { DISCOUNT_OFFERS, PLANS, formatPrice } from "../lib/plans";
+
 type Tier = {
   name: string;
   price: string;
@@ -10,19 +12,17 @@ type Tier = {
   phase2?: boolean;
 };
 
-const TIERS: Tier[] = [
-  {
+const TIER_COPY: Record<string, Omit<Tier, "price">> = {
+  Free: {
     name: "Free",
-    price: "$0",
     per: "/forever",
     blurb: "For a first look",
     bestFor: "Best for: trying it out on a single site.",
     features: ["1 scan per day", "Score + top 3 issues", "No account needed", "No installation"],
     cta: "Run free audit",
   },
-  {
+  "One-time report": {
     name: "One-time report",
-    price: "$24",
     per: "/once",
     blurb: "For the full picture",
     bestFor: "Best for: owners fixing one site properly, once.",
@@ -31,9 +31,8 @@ const TIERS: Tier[] = [
     popular: true,
     phase2: true,
   },
-  {
+  Monitoring: {
     name: "Monitoring",
-    price: "$19",
     per: "/month",
     blurb: "For staying fixed",
     bestFor: "Best for: teams that need the score to keep improving.",
@@ -41,9 +40,8 @@ const TIERS: Tier[] = [
     cta: "Start monitoring",
     phase2: true,
   },
-  {
+  "Agency white-label": {
     name: "Agency white-label",
-    price: "$109",
     per: "/month",
     blurb: "For client work",
     bestFor: "Best for: agencies selling audits under their own brand.",
@@ -51,7 +49,12 @@ const TIERS: Tier[] = [
     cta: "Talk to us",
     phase2: true,
   },
-];
+};
+
+const TIERS: Tier[] = PLANS.map((p) => ({
+  ...TIER_COPY[p.name],
+  price: formatPrice(p.price),
+}));
 
 export function Pricing({ onPhase2 }: { onPhase2: (context: string) => void }) {
   return (
@@ -64,6 +67,17 @@ export function Pricing({ onPhase2 }: { onPhase2: (context: string) => void }) {
         >
           Honest pricing, like the reports.
         </h2>
+        <div className="mt-8 flex flex-col items-start gap-2 rounded-[10px] border border-line-strong bg-surface p-5 text-[14px] text-ink-2 sm:flex-row sm:items-center sm:gap-6">
+          {DISCOUNT_OFFERS.map((d) => (
+            <p key={d.code}>
+              <strong className="font-semibold text-ink">{d.headline}</strong> {d.detail}{" "}
+              with code{" "}
+              <code className="rounded border border-line-strong bg-paper px-1.5 py-0.5 font-mono text-[13px] text-ink">
+                {d.code}
+              </code>
+            </p>
+          ))}
+        </div>
         <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {TIERS.map((t) => (
             <article
