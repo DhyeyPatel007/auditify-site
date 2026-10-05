@@ -15,16 +15,22 @@ export function AuthDebugPage() {
     push(`projectId=${import.meta.env.VITE_FIREBASE_PROJECT_ID ?? "(missing)"}`);
     const key = import.meta.env.VITE_FIREBASE_API_KEY as string | undefined;
     push(`apiKey=${key ? key.slice(0, 8) + "..." : "(missing)"}`);
-    try {
-      const keys: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.includes("pendingRedirect")) keys.push(k);
+    const checkStores = (label: string) => {
+      const found: string[] = [];
+      for (const store of [localStorage, sessionStorage]) {
+        try {
+          for (let i = 0; i < store.length; i++) {
+            const k = store.key(i);
+            if (k && k.includes("pendingRedirect"))
+              found.push(`${store === localStorage ? "local" : "session"}:${k}`);
+          }
+        } catch (e) {
+          found.push(`(unreadable:${String(e)})`);
+        }
       }
-      push(`pendingRedirect keys in localStorage: ${keys.length ? keys.join(",") : "(none)"}`);
-    } catch (e) {
-      push(`localStorage unreadable: ${String(e)}`);
-    }
+      push(`${label} pendingRedirect keys: ${found.length ? found.join(",") : "(none)"}`);
+    };
+    checkStores("on-load");
     if (!auth) {
       push("auth is null, aborting");
       return;
