@@ -1,10 +1,15 @@
 import { useCallback, useState } from "react";
 import { Nav } from "./sections/Nav";
 import { Hero } from "./sections/Hero";
+import { Transformations } from "./sections/Transformations";
 import { HowItWorks } from "./sections/HowItWorks";
 import { SampleReport } from "./sections/SampleReport";
+import { Compare } from "./sections/Compare";
+import { MonitoringPreview } from "./sections/MonitoringPreview";
+import { WhiteLabel } from "./sections/WhiteLabel";
 import { Features } from "./sections/Features";
 import { Pricing } from "./sections/Pricing";
+import { History } from "./sections/History";
 import { Faq } from "./sections/Faq";
 import { CtaBand } from "./sections/CtaBand";
 import { Footer } from "./sections/Footer";
@@ -50,10 +55,15 @@ function Shell() {
       />
       <main>
         <Hero onUnlock={() => openPhase2("Full report")} uid={user?.uid ?? null} />
+        <Transformations />
         <HowItWorks />
         <SampleReport onUnlock={() => openPhase2("Full report")} />
+        <Compare />
+        <MonitoringPreview />
+        <WhiteLabel />
         <Features />
         <Pricing onPhase2={openPhase2} />
+        <History uid={user?.uid ?? null} />
         <Faq />
         <CtaBand />
       </main>

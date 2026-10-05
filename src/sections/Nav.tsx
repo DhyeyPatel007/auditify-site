@@ -44,6 +44,16 @@ export function Nav({ user, onSignIn, onSignOut, onAccount }: Props) {
             </a>
           </li>
           <li>
+            <a href="/methodology" className="transition-colors hover:text-ink">
+              Methodology
+            </a>
+          </li>
+          <li>
+            <a href="/teardowns" className="transition-colors hover:text-ink">
+              Teardowns
+            </a>
+          </li>
+          <li>
             <a href="/#pricing" className="transition-colors hover:text-ink">
               Pricing
             </a>
