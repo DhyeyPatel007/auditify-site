@@ -154,6 +154,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [redirectError, setRedirectError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Preload Google Identity Services so the sign-in popup opens within
+    // the user's click gesture (async script load would break it).
+    loadGis().catch(() => {});
     if (!auth) {
       setLoading(false);
       return;
