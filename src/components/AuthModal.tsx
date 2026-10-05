@@ -9,7 +9,7 @@ type Props = {
 };
 
 export function AuthModal({ open, mode: initialMode, onClose }: Props) {
-  const { configured, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
+  const { configured, redirectError, clearRedirectError, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -22,9 +22,10 @@ export function AuthModal({ open, mode: initialMode, onClose }: Props) {
     if (open) {
       setMode(initialMode);
       setError(null);
+      clearRedirectError();
       setPassword("");
     }
-  }, [open, initialMode]);
+  }, [open, initialMode, clearRedirectError]);
 
   useEffect(() => {
     if (!open) return;
@@ -171,9 +172,9 @@ export function AuthModal({ open, mode: initialMode, onClose }: Props) {
                 autoComplete={mode === "signup" ? "new-password" : "current-password"}
                 className={inputCls}
               />
-              {error && (
+              {(error || redirectError) && (
                 <p role="alert" className="text-[14px] text-accent-deep">
-                  {error}
+                  {error || redirectError}
                 </p>
               )}
               <button

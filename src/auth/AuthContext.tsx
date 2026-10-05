@@ -9,9 +9,10 @@ import {
 import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
+  getRedirectResult,
   onAuthStateChanged,
   signInWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
   signOut,
   updateProfile,
   type User,
@@ -62,6 +63,9 @@ type AuthContextValue = {
   user: User | null;
   loading: boolean;
   configured: boolean;
+  /** Error from a completed Google redirect sign-in, if any. */
+  redirectError: string | null;
+  clearRedirectError: () => void;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, name?: string) => Promise<void>;
@@ -78,20 +82,31 @@ function needAuth(): NonNullable<typeof auth> {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [redirectError, setRedirectError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!auth) {
       setLoading(false);
       return;
     }
+    // Complete a Google redirect sign-in if we just came back from Google.
+    getRedirectResult(auth)
+      .catch((err) => {
+        setRedirectError(friendlyAuthError(err));
+      })
+      .finally(() => setLoading(false));
     return onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoading(false);
     });
   }, []);
 
+  const clearRedirectError = useCallback(() => setRedirectError(null), []);
+
   const signInWithGoogle = useCallback(async () => {
-    await signInWithPopup(needAuth(), new GoogleAuthProvider());
+    // Redirect (not popup): reliable on mobile browsers where popups are
+    // blocked or mishandled. Navigates to Google and back.
+    await signInWithRedirect(needAuth(), new GoogleAuthProvider());
   }, []);
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
@@ -118,6 +133,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         loading,
         configured: isAuthConfigured(),
+        redirectError,
+        clearRedirectError,
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,
