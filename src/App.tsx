@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Nav } from "./sections/Nav";
 import { Hero } from "./sections/Hero";
 import { Transformations } from "./sections/Transformations";
@@ -19,7 +19,7 @@ import { AccountModal } from "./components/AccountModal";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 
 function Shell() {
-  const { user, signOutUser } = useAuth();
+  const { user, signOutUser, redirectError } = useAuth();
   const [phase2, setPhase2] = useState<{ open: boolean; context: string }>({
     open: false,
     context: "",
@@ -29,6 +29,12 @@ function Shell() {
     mode: "signin",
   });
   const [accountOpen, setAccountOpen] = useState(false);
+
+  // If a Google redirect sign-in came back with an error, open the dialog
+  // so the error is visible instead of failing silently.
+  useEffect(() => {
+    if (redirectError) setAuth({ open: true, mode: "signin" });
+  }, [redirectError]);
 
   const openPhase2 = (context: string) => setPhase2({ open: true, context });
   const closePhase2 = () => setPhase2((p) => ({ ...p, open: false }));
