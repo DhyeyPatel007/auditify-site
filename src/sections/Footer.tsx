@@ -20,6 +20,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
     links: [
       { label: "Privacy", href: "/privacy" },
       { label: "Terms", href: "/terms" },
+      { label: "Refunds", href: "/refund" },
     ],
   },
 ];
@@ -79,6 +80,12 @@ export function Footer() {
             </span>
             <a href="/privacy" className="transition-colors hover:text-ink">
               Privacy
+            </a>
+            <span aria-hidden="true" className="mx-2 text-line-strong">
+              ·
+            </span>
+            <a href="/refund" className="transition-colors hover:text-ink">
+              Refunds
             </a>
           </p>
         </div>

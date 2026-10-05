@@ -6,6 +6,7 @@ import { PrivacyPage } from "./pages/Privacy";
 import { MethodologyPage } from "./pages/Methodology";
 import { TeardownsPage } from "./pages/Teardowns";
 import { TeardownPostPage } from "./pages/TeardownPost";
+import { RefundPage } from "./pages/Refund";
 import "./index.css";
 
 const path = window.location.pathname.replace(/\/+$/, "") || "/";
@@ -13,6 +14,7 @@ const path = window.location.pathname.replace(/\/+$/, "") || "/";
 function Route() {
   if (path === "/terms") return <TermsPage />;
   if (path === "/privacy") return <PrivacyPage />;
+  if (path === "/refund") return <RefundPage />;
   if (path === "/methodology") return <MethodologyPage />;
   if (path === "/teardowns") return <TeardownsPage />;
   if (path.startsWith("/teardowns/")) {
