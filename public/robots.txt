@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://auditify-site.vercel.app/sitemap.xml
+Sitemap: https://auditify.krynex.in/sitemap.xml
