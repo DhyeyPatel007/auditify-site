@@ -54,7 +54,11 @@ function Shell() {
         Skip to the free audit
       </a>
       <Nav
-        user={user ? { email: user.email ?? "", name: user.displayName } : null}
+        user={
+          user
+            ? { email: user.email ?? "", name: user.displayName, photoURL: user.photoURL }
+            : null
+        }
         onSignIn={() => openAuth("signin")}
         onSignOut={handleSignOut}
         onAccount={() => setAccountOpen(true)}

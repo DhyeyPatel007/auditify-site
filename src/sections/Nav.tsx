@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Wordmark } from "../components/Logo";
+import { Avatar } from "../components/Avatar";
 
 export type NavUser = {
   email: string;
   name: string | null;
+  photoURL: string | null;
 };
 
 type Props = {
@@ -25,8 +27,6 @@ export function Nav({ user, onSignIn, onSignOut, onAccount }: Props) {
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [menuOpen]);
-
-  const initial = (user?.name || user?.email || "?").trim().charAt(0).toUpperCase();
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur-sm">
@@ -73,19 +73,36 @@ export function Nav({ user, onSignIn, onSignOut, onAccount }: Props) {
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
                 aria-label={`Account: ${user.email}`}
-                className="flex h-[44px] w-[44px] items-center justify-center rounded-full bg-ink font-display text-[18px] font-semibold text-paper transition-colors hover:bg-[#2A251F]"
+                className="rounded-full transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
-                {initial}
+                <Avatar
+                  name={user.name}
+                  email={user.email}
+                  photoURL={user.photoURL}
+                  size={44}
+                />
               </button>
               {menuOpen && (
                 <div
                   role="menu"
                   className="absolute right-0 top-[52px] w-64 rounded-[10px] border border-line-strong bg-surface p-2 shadow-[0_8px_24px_rgba(28,25,21,0.12)]"
                 >
-                  <p className="px-3 pb-1 pt-2 text-[13px] text-muted">Signed in as</p>
-                  <p className="truncate px-3 pb-2 text-[14px] font-medium text-ink">
-                    {user.email}
-                  </p>
+                  <div className="flex items-center gap-3 px-3 pb-2 pt-2">
+                    <Avatar
+                      name={user.name}
+                      email={user.email}
+                      photoURL={user.photoURL}
+                      size={40}
+                    />
+                    <div className="min-w-0">
+                      {user.name && (
+                        <p className="truncate text-[14px] font-medium text-ink">
+                          {user.name}
+                        </p>
+                      )}
+                      <p className="truncate text-[13px] text-muted">{user.email}</p>
+                    </div>
+                  </div>
                   <div className="border-t border-line" />
                   <button
                     type="button"
