@@ -25,13 +25,14 @@ export function planByName(name: string): Plan | undefined {
 /**
  * Discount offers — shown on the pricing page and at checkout.
  *
- * The codes below are the ones the site displays. The site owner must create
- * MATCHING coupons in the Paddle dashboard (discounts: 10% first purchase,
- * 5% next purchase, one-time use each) — Paddle validates and applies them at
- * checkout and is the source of truth for percentages and one-time-use
- * enforcement.
+ * IMPORTANT: coupon codes are NOT hard-coded anywhere in this codebase.
+ * The site owner must create the matching coupons in the Paddle dashboard
+ * (10% off first purchase, 5% off next purchase, one-time use each).
+ * Paddle validates and applies the codes at checkout and is the source of
+ * truth for percentages and one-time-use enforcement. The coupon-code input
+ * in the checkout modal passes the customer's typed code through to Paddle.
  */
 export const DISCOUNT_OFFERS = [
-  { code: "WELCOME10", headline: "10% off", detail: "your first purchase" },
-  { code: "RETURN5", headline: "5% off", detail: "your next purchase" },
+  { headline: "10% off", detail: "your first purchase" },
+  { headline: "5% off", detail: "your next purchase" },
 ] as const;

@@ -1,6 +1,6 @@
 # Auditify — Zero-Budget Marketing Plan (First 14 Days)
 
-Product: website-audit SaaS. Free scan → $24 report → $19/mo monitoring → $109/mo agency.
+Product: website-audit SaaS. Free scan → $15 report → $12/mo monitoring → $69/mo agency.
 Voice: quiet, confident, precise. Hero: "A website audit you'll actually read."
 Audience: small businesses, agencies, developers in the US/UK/Canada.
 Budget: ₹0. Founder in India — post when the US/UK is awake (IST 6pm–1am window).
@@ -114,7 +114,7 @@ Budget: ₹0. Founder in India — post when the US/UK is awake (IST 6pm–1am w
 - **No fake proof** — no invented testimonials, no "trusted by" logos, no inflated user counts. Ever.
 - **No bought followers / engagement pods** — dead numbers that kill reach.
 - **No mass DMs** — 15 thoughtful emails beat 500 copy-pastes.
-- **No discounting the $24** — it anchors the value. Discount only in a deliberate, time-boxed experiment.
+- **Discounts (approved 2026-10-05):** 10% off first purchase + 5% off next purchase, one-time use each. Codes live in Paddle; site only advertises the offers and passes typed codes to checkout.
 - **No AppSumo-style lifetime deal** — not until you have real traction and know your costs.
 - **No building features instead of outreach** — if you're coding in week 2, you're hiding.
 - **No public shaming teardowns** — teach, don't humiliate. Permission first when naming names.

@@ -10,6 +10,7 @@ import { CtaBand } from "./sections/CtaBand";
 import { Footer } from "./sections/Footer";
 import { Phase2Modal } from "./components/Phase2Modal";
 import { AuthModal } from "./components/AuthModal";
+import { AccountModal } from "./components/AccountModal";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 
 function Shell() {
@@ -22,6 +23,7 @@ function Shell() {
     open: false,
     mode: "signin",
   });
+  const [accountOpen, setAccountOpen] = useState(false);
 
   const openPhase2 = (context: string) => setPhase2({ open: true, context });
   const closePhase2 = () => setPhase2((p) => ({ ...p, open: false }));
@@ -44,9 +46,10 @@ function Shell() {
         user={user ? { email: user.email ?? "", name: user.displayName } : null}
         onSignIn={() => openAuth("signin")}
         onSignOut={handleSignOut}
+        onAccount={() => setAccountOpen(true)}
       />
       <main>
-        <Hero onUnlock={() => openPhase2("Full report")} />
+        <Hero onUnlock={() => openPhase2("Full report")} uid={user?.uid ?? null} />
         <HowItWorks />
         <SampleReport onUnlock={() => openPhase2("Full report")} />
         <Features />
@@ -61,6 +64,16 @@ function Shell() {
         onClose={closePhase2}
       />
       <AuthModal open={auth.open} mode={auth.mode} onClose={closeAuth} />
+      {user && (
+        <AccountModal
+          open={accountOpen}
+          onClose={() => setAccountOpen(false)}
+          uid={user.uid}
+          email={user.email ?? ""}
+          name={user.displayName}
+          onSignOut={handleSignOut}
+        />
+      )}
     </div>
   );
 }

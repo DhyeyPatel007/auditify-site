@@ -42,9 +42,27 @@ export function TermsPage() {
 
       <h2>Paid plans</h2>
       <p>
-        Full reports, monitoring, and agency plans are <strong>Phase 2</strong>
-        {" — "}they're not live yet. These terms will be updated when paid
-        plans launch.
+        Full reports are <strong>$15 one-time</strong>, monitoring is{" "}
+        <strong>$12/month</strong>, and agency white-label is{" "}
+        <strong>$69/month</strong>. Payments are handled by our checkout
+        provider (Paddle) — we never see or store your card details. Cancel any
+        monthly plan anytime and keep access until the end of your billing
+        period.
+      </p>
+      <p>
+        Paid checkout opens at launch; until then the buttons on the pricing
+        page don&rsquo;t charge anything. These terms will be finalized when
+        paid plans go live.
+      </p>
+
+      <h2>Discount codes</h2>
+      <p>
+        We offer <strong>10% off your first purchase</strong> and{" "}
+        <strong>5% off your next purchase</strong>, each usable once per
+        account. Codes are applied at checkout and can&rsquo;t be combined,
+        transferred, or redeemed for cash. We may retire or replace discount
+        offers at any time; codes already applied to a completed purchase are
+        unaffected.
       </p>
     </LegalLayout>
   );

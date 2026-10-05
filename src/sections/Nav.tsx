@@ -10,9 +10,10 @@ type Props = {
   user: NavUser | null;
   onSignIn: () => void;
   onSignOut: () => void;
+  onAccount: () => void;
 };
 
-export function Nav({ user, onSignIn, onSignOut }: Props) {
+export function Nav({ user, onSignIn, onSignOut, onAccount }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -81,9 +82,20 @@ export function Nav({ user, onSignIn, onSignOut }: Props) {
                     role="menuitem"
                     onClick={() => {
                       setMenuOpen(false);
-                      onSignOut();
+                      onAccount();
                     }}
                     className="mt-1 w-full rounded-lg px-3 py-2.5 text-left text-[14px] font-medium text-ink transition-colors hover:bg-paper"
+                  >
+                    My reports &amp; plans
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onSignOut();
+                    }}
+                    className="w-full rounded-lg px-3 py-2.5 text-left text-[14px] font-medium text-ink transition-colors hover:bg-paper"
                   >
                     Log out
                   </button>

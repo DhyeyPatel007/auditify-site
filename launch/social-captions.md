@@ -3,7 +3,7 @@
 Brand: Auditify, by KRYNEX STUDIO
 Voice: quiet, confident, precise. No hype, no fake numbers, no fabricated testimonials.
 Live: auditify-site.vercel.app
-Honest facts used: free scan, 35+ deterministic checks (security headers, TLS, SEO, speed, broken links), plain-English explanations, no sign-up. Pricing: $24 one-time full report · $19/mo monitoring · $109/mo agency white-label.
+Honest facts used: free scan, 35+ deterministic checks (security headers, TLS, SEO, speed, broken links), plain-English explanations, no sign-up. Pricing: $15 one-time full report · $12/mo monitoring · $69/mo agency white-label.
 
 ---
 

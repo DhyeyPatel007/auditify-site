@@ -14,10 +14,10 @@ Talk > build.
 
 ### 1. Paddle live (his lane — do it tomorrow)
 - [ ] Finish Paddle signup + identity verification (passport/govt ID + liveness selfie, PAN, bank proof)
-- [ ] Create 3 products in Paddle: **$24 one-time report**, **$19/mo monitoring**, **$109/mo agency white-label**
+- [ ] Create 3 products in Paddle: **$15 one-time report**, **$12/mo monitoring**, **$69/mo agency white-label**
 - [ ] Run a test checkout end-to-end in Paddle sandbox
 - [ ] Hand the 3 checkout links to the build side so buttons get wired
-- **Done looks like:** a real $24 test purchase completes and the money path works.
+- **Done looks like:** a real $15 test purchase completes and the money path works.
 
 ### 2. Domain decision (by end of week 1)
 Options: `auditify.krynex.in` (keeps everything under the studio, zero cost)
@@ -56,9 +56,9 @@ with a 2-line note. Template:
 ### 6. Outreach sprint: 15 personalized audits a day
 This is the highest-ROI activity you have. No ads, no waiting.
 - [ ] Each morning, find 15 small-business/agency sites in the US/UK/CA with visible issues (Google: `"dentist" "chicago"`, `"law firm" "manchester"`, `"shopify store" + niche`, etc. — run each through your own scanner first).
-- [ ] Email/LinkedIn DM each owner: 3 specific findings + the free full report + one line: "Full readable report is $24 if you want me to go deeper."
+- [ ] Email/LinkedIn DM each owner: 3 specific findings + the free full report + one line: "Full readable report is $15 if you want me to go deeper."
 - [ ] Script (keep it short, no flattery):
-> "Hi [name] — I ran a free technical audit on [site]. Found [3 specific things, e.g. 'no HTTPS redirect, 2.1MB of images, missing meta description']. Full plain-English report attached, free. If you want the deep version with fixes prioritized, it's $24: [link]."
+> "Hi [name] — I ran a free technical audit on [site]. Found [3 specific things, e.g. 'no HTTPS redirect, 2.1MB of images, missing meta description']. Full plain-English report attached, free. If you want the deep version with fixes prioritized, it's $15: [link]."
 - **Done looks like:** 100 outreach sent, 10+ replies, first paying customers.
 
 ### 7. Collect proof
@@ -67,7 +67,7 @@ This is the highest-ROI activity you have. No ads, no waiting.
 - **Done looks like:** 3 named testimonials live.
 
 ### 8. Pricing reality check
-- [ ] First $24 sale = pricing validated, keep going.
+- [ ] First $15 sale = pricing validated, keep going.
 - [ ] 100 outreach + 0 sales = the problem is traffic/offer framing, not price. Do NOT discount — re-read the concierge feedback doc first.
 - **Done looks like:** you know WHY people buy or don't.
 
@@ -83,7 +83,7 @@ Look at the week's numbers (see free-marketing-plan.md metrics):
 
 ### 10. Test monitoring demand WITHOUT building it
 Do not build scheduled scans yet. Instead:
-- [ ] Email your $24 buyers: "Want me to re-scan [site] monthly and email you what changed + what broke? $19/mo, cancel anytime. Reply YES and I'll set it up manually."
+- [ ] Email your $15 buyers: "Want me to re-scan [site] monthly and email you what changed + what broke? $12/mo, cancel anytime. Reply YES and I'll set it up manually."
 - [ ] Fulfill manually with calendar reminders for the first 5 takers.
 - **Done looks like:** you know if anyone actually wants monitoring before writing a line of scheduler code.
 
@@ -97,7 +97,7 @@ Build triggers (do not build before these):
 | User accounts | ≥10 paying customers OR ≥200 emails captured |
 | Scheduled scans + alerts | ≥5 people pay for manual monthly re-scans |
 | PDF export | ≥3 customers ask for it |
-| Agency white-label ($109) | an actual agency asks for it |
+| Agency white-label ($69) | an actual agency asks for it |
 | Admin panel | support volume > 5 emails/week |
 
 - [ ] Whatever crossed its trigger gets built. Whatever didn't, waits.

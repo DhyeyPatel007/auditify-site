@@ -82,7 +82,7 @@ Forward-looking copy ("Delete your account…") for a product with no accounts y
 
 - Scanner engine: 35+ deterministic checks, accuracy-audited 2026-10-05 against curl ground truth on 8 sites; 12 bugs fixed and verified live.
 - Security: full CSP, HSTS (preload), X-Frame-Options DENY, nosniff, no exposed `.env`/`.git`/sourcemaps.
-- Honest monetization: paid tiers open a "Checkout opens at launch" modal — nothing faked; post-scan upsell ("Unlock full report — $24") works.
+- Honest monetization: paid tiers open a "Checkout opens at launch" modal — nothing faked; post-scan upsell ("Unlock full report — $15") works.
 - SEO basics: title, meta description, OG tags, twitter card, OG image (200), favicon set, sitemap.xml + robots.txt present, canonical set.
 - Legal pages exist (Terms, Privacy) with honest "paid plans are Phase 2" framing.
 - All nav anchors (`#features`, `#pricing`, `#faq`, `#scan`, `#top`) resolve; `/terms` and `/privacy` route correctly.

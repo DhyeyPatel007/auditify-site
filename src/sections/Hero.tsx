@@ -9,7 +9,7 @@ const SAMPLE_ROWS: LedgerRowData[] = [
   { severity: "PASS", title: "HTTPS enforced", metric: "valid" },
 ];
 
-export function Hero({ onUnlock }: { onUnlock: () => void }) {
+export function Hero({ onUnlock, uid }: { onUnlock: () => void; uid: string | null }) {
   return (
     <section className="border-b border-line" aria-labelledby="hero-heading">
       <div className="mx-auto grid max-w-[1120px] gap-12 px-6 py-16 md:py-24 lg:grid-cols-[1fr_420px] lg:gap-16">
@@ -35,7 +35,7 @@ export function Hero({ onUnlock }: { onUnlock: () => void }) {
                 </div>
               }
             >
-              <Scanner onUnlock={onUnlock} />
+              <Scanner onUnlock={onUnlock} uid={uid} />
             </Suspense>
           </div>
           <p className="mt-6">

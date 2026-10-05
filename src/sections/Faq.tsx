@@ -21,7 +21,15 @@ const FAQS = [
   },
   {
     q: "What happens to my data?",
-    a: "Right now there's no account — you scan, you get your report, and we don't keep your personal details. We never sell data, share it with third parties, or use your scans to train models.",
+    a: "You can scan without an account and we don't keep your personal details for that. If you create an account (Google or email), we keep your name and email plus a list of the sites you've scanned so you can revisit past reports. Passwords are hashed by our sign-in provider — we never see them. We never sell data, share it with third parties beyond running sign-in, or use your scans to train models.",
+  },
+  {
+    q: "How do the launch discounts work?",
+    a: "10% off your first purchase and 5% off your next one, one-time use each. You'll get your discount codes by email when checkout opens — there's a code box at checkout and the discount applies automatically. Codes can't be combined or transferred.",
+  },
+  {
+    q: "Do I need an account?",
+    a: "No. The free scan works with no sign-up. An account (Google or email + password) keeps your scan history in one place and is where your monitoring plans and discount codes live once paid plans launch. You can log out anytime from the menu in the top-right.",
   },
 ];
 

@@ -67,16 +67,20 @@ export function Pricing({ onPhase2 }: { onPhase2: (context: string) => void }) {
         >
           Honest pricing, like the reports.
         </h2>
-        <div className="mt-8 flex flex-col items-start gap-2 rounded-[10px] border border-line-strong bg-surface p-5 text-[14px] text-ink-2 sm:flex-row sm:items-center sm:gap-6">
-          {DISCOUNT_OFFERS.map((d) => (
-            <p key={d.code}>
-              <strong className="font-semibold text-ink">{d.headline}</strong> {d.detail}{" "}
-              with code{" "}
-              <code className="rounded border border-line-strong bg-paper px-1.5 py-0.5 font-mono text-[13px] text-ink">
-                {d.code}
-              </code>
-            </p>
-          ))}
+        <div className="rounded-[10px] border border-line-strong bg-surface p-5 text-[14px] text-ink-2">
+          <p className="font-semibold text-ink">Launch discounts</p>
+          <p className="mt-2">
+            {DISCOUNT_OFFERS.map((d, i) => (
+              <span key={d.headline}>
+                {i > 0 && ", "}
+                <strong className="font-semibold text-ink">{d.headline}</strong>{" "}
+                {d.detail}
+              </span>
+            ))}{" "}
+            — one-time use each. Discount codes go live with checkout: you&rsquo;ll
+            get yours by email, and the code box at checkout applies them
+            automatically.
+          </p>
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {TIERS.map((t) => (

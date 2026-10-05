@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { GradeStamp, SeverityStamp, type Grade } from "./Stamps";
+import { saveReport } from "../lib/reports";
 
 type Issue = {
   id: string;
@@ -26,6 +27,8 @@ type ScanResult = {
 
 type Props = {
   onUnlock: () => void;
+  /** Firebase UID when signed in — scan results are saved to the account's history. */
+  uid: string | null;
 };
 
 // The input renders a decorative "https://" prefix span, so the value itself
@@ -46,7 +49,7 @@ const SCAN_STEPS = [
   "Stamping your report…",
 ];
 
-export function Scanner({ onUnlock }: Props) {
+export function Scanner({ onUnlock, uid }: Props) {
   const [url, setUrl] = useState("");
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [step, setStep] = useState(0);
@@ -80,6 +83,17 @@ export function Scanner({ onUnlock }: Props) {
       }
       setResult(data as ScanResult);
       setState("done");
+      if (uid) {
+        const r = data as ScanResult;
+        saveReport(uid, {
+          url: r.url,
+          host: r.host,
+          score: r.score,
+          grade: r.grade,
+          checksRun: r.checksRun,
+          scannedAt: new Date().toISOString(),
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Scan failed. Try again.");
       setState("error");
