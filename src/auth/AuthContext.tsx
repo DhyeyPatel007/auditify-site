@@ -45,10 +45,16 @@ export function friendlyAuthError(err: unknown): string {
       return "Too many attempts — wait a few minutes and try again.";
     case "auth/network-request-failed":
       return "Network problem — check your connection and try again.";
-    default:
-      return code
-        ? `Something went wrong signing you in. Try again. (${code})`
+    default: {
+      const msg =
+        typeof err === "object" && err !== null && "message" in err
+          ? String((err as { message: unknown }).message)
+          : "";
+      const suffix = [code, msg].filter(Boolean).join(" | ");
+      return suffix
+        ? `Something went wrong signing you in. Try again. (${suffix})`
         : "Something went wrong signing you in. Try again.";
+    }
   }
 }
 
