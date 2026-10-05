@@ -12,6 +12,7 @@ import {
   getRedirectResult,
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signInWithRedirect,
   signOut,
   updateProfile,
@@ -104,9 +105,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearRedirectError = useCallback(() => setRedirectError(null), []);
 
   const signInWithGoogle = useCallback(async () => {
-    // Redirect (not popup): reliable on mobile browsers where popups are
-    // blocked or mishandled. Navigates to Google and back.
-    await signInWithRedirect(needAuth(), new GoogleAuthProvider());
+    // Popup keeps the whole flow on one page (no return-trip state to lose).
+    // Falls back to full-page redirect if the popup can't open.
+    try {
+      await signInWithPopup(needAuth(), new GoogleAuthProvider());
+    } catch (err) {
+      const code =
+        typeof err === "object" && err !== null && "code" in err
+          ? String((err as { code: unknown }).code)
+          : "";
+      if (code === "auth/popup-blocked" || code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+        await signInWithRedirect(needAuth(), new GoogleAuthProvider());
+        return;
+      }
+      throw err;
+    }
   }, []);
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
