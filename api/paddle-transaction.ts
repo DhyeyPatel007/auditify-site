@@ -13,7 +13,8 @@
  * PADDLE_API_KEY is the server-side secret key (never exposed to the browser).
  */
 
-import admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 
 const PRICE_IDS: Record<string, string> = {
   // Sandbox price IDs (Paddle dashboard → Catalog → Products)
@@ -34,12 +35,12 @@ const FIREBASE_PROJECT_ID =
   process.env.VITE_FIREBASE_PROJECT_ID ||
   "auditify-74fad";
 
-function auth() {
-  if (!admin.apps.length) {
+function verifyIdToken(idToken: string) {
+  if (!getApps().length) {
     // ID-token verification only needs the project ID (Google's public certs).
-    admin.initializeApp({ projectId: FIREBASE_PROJECT_ID });
+    initializeApp({ projectId: FIREBASE_PROJECT_ID });
   }
-  return admin.auth();
+  return getAuth().verifyIdToken(idToken);
 }
 
 type ReqLike = {
@@ -67,7 +68,7 @@ export default async function handler(req: ReqLike, res: ResLike) {
   let uid: string;
   let email: string;
   try {
-    const decoded = await auth().verifyIdToken(idToken);
+    const decoded = await verifyIdToken(idToken);
     uid = decoded.uid;
     email = typeof decoded.email === "string" ? decoded.email : "";
     if (!email) throw new Error("no email");
