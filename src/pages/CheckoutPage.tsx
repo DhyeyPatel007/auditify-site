@@ -30,11 +30,8 @@ export function CheckoutPage({
         Paddle.Checkout.open({
           transactionId,
           settings: {
-            displayMode: "inline",
-            frameTarget: "paddle-inline-checkout",
-            frameInitialHeight: "450",
-            frameStyle:
-              "width:100%;min-width:286px;background-color:transparent;border:none;",
+            displayMode: "overlay",
+            variant: "one-page",
             theme: "light",
           },
         });
