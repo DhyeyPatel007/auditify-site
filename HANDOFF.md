@@ -187,3 +187,12 @@ git push origin main          # Vercel auto-deploys (check Settings → Git if i
 - Verify live: `curl -s -o /dev/null -w "%{http_code}" https://auditify.krynex.in/`
 - Test scanner: `curl -X POST https://auditify.krynex.in/api/scan -H 'Content-Type: application/json' -d '{"url":"https://example.com"}'`
 - Full context: `~/MEMORY.md`, `~/memory/2026-10-05.md`, `launch/` docs in this repo.
+
+## 2026-10-06 — Payments working end-to-end in sandbox
+- Checkout renders centered/usable via CSS override (`iframe.paddle-frame` forced fixed/centered in index.css) — Paddle.js mispositions its iframe without this.
+- Test purchase completed: $15 paid, Paddle invoice emailed (txn_01m490f34xwbng38fq65rhwjsy).
+- Webhook verified working (200 on transaction.completed). Two bugs fixed:
+  1. Paddle signs `ts:body` with COLON, not semicolon.
+  2. No timestamp freshness check — Paddle replays reuse old timestamps.
+- NEXT: Migrate to Paddle LIVE (user doing tomorrow). Needs: seller verification, domain approval, live products/prices/keys/webhook/coupons, then swap Vercel env vars to live values + PADDLE_ENV=production.
+- Fulfillment still only logs — paid feature unlocking not built yet.
