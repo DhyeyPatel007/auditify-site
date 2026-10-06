@@ -144,6 +144,9 @@ export default async function handler(req: ReqLike, res: ResLike) {
       body: JSON.stringify({
         items: [{ price_id: priceId, quantity: 1 }],
         customer: { email },
+        // Without this, Paddle creates the transaction with checkout disabled
+        // and the hosted checkout page shows "Something went wrong".
+        enable_checkout: true,
         // Verified uid travels with the transaction so fulfillment can
         // credit exactly the signed-in buyer — not whoever typed an email.
         custom_data: { plan: PLAN_SLUGS[plan], firebase_uid: uid },
