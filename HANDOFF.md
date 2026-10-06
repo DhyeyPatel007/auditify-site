@@ -127,7 +127,7 @@ Small businesses + agencies + developers. **Deliberately broad** — owner is a 
 1. **Paddle:** finish seller verification → create 3 products (report $15 one-time, monitoring $12/mo, agency $69/mo) + 2 coupons (10% first, 5% next, one-time each) in **sandbox first**, then live → send price IDs + webhook secret.
 2. **Firebase:** publish the Google OAuth consent screen (one click).
 3. Confirm Payoneer account exists in his name (else payouts fail).
-4. 5-minute real-phone mobile QA pass.
+4. 5-minute real-phone mobile QA pass — **done 2026-10-06**.
 5. Confirm public contact email (temp `dhyeypatel.work2@gmail.com` → ideally `hello@krynex.in`).
 6. Accessibility call: fix contrast or launch at 96.
 
