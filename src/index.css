@@ -60,6 +60,21 @@ body {
   }
 }
 
+/* Paddle checkout frame fixes — Paddle.js mispositions its iframe on this
+   page (tiny bottom-left). Force it into a usable centered frame. */
+iframe.paddle-frame {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(480px, 94vw) !important;
+  height: min(700px, 92vh) !important;
+  z-index: 2147483647 !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+}
+
 /* Grade stamp: slight rotation, stamped feel */
 .stamp {
   transform: rotate(-2deg);
