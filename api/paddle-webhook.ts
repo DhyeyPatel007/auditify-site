@@ -73,9 +73,21 @@ export default async function handler(req: ReqLike, res: ResLike) {
   }
 
   const rawBody = await readRawBody(req);
-  if (!verifySignature(secret, headerValue(req.headers["paddle-signature"]), rawBody)) {
+  const sigHeader = headerValue(req.headers["paddle-signature"]);
+  if (!verifySignature(secret, sigHeader, rawBody)) {
     console.warn("[paddle] Invalid signature — webhook rejected.");
-    return res.status(401).json({ error: "Invalid signature." });
+    // TEMP DEBUG — remove after diagnosing
+    return res.status(401).json({
+      error: "Invalid signature.",
+      debug: {
+        secretSet: !!secret,
+        secretLen: secret.length,
+        headerPresent: !!sigHeader,
+        headerPreview: sigHeader ? sigHeader.slice(0, 20) + "..." : null,
+        bodyLen: rawBody.length,
+        bodyPreview: rawBody.toString("utf8").slice(0, 50),
+      },
+    });
   }
 
   let event: { event_type?: string; data?: Record<string, unknown> };
