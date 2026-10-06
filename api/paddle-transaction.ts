@@ -4,17 +4,17 @@
  * page (no overlay).
  *
  * AUTH: requires a Firebase ID token (Authorization: Bearer <token>).
- * The token is verified server-side — the buyer's email/uid come from the
- * verified token, never from client input. No token → 401. This closes the
- * loophole: checkout cannot be started anonymously or for someone else.
+ * The token is verified server-side with Google's public certs (no SDK —
+ * plain node:crypto, zero dependencies). Email/uid come from the verified
+ * token, never from client input. No token → 401. This closes the loophole:
+ * checkout cannot be started anonymously or for someone else.
  *
  * Sandbox while PADDLE_API_URL points at the sandbox API. Price IDs below
  * are the SANDBOX ids — replace with live ids when Paddle moves to production.
  * PADDLE_API_KEY is the server-side secret key (never exposed to the browser).
  */
 
-import { getApps, initializeApp } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
+import { createPublicKey, verify } from "node:crypto";
 
 const PRICE_IDS: Record<string, string> = {
   // Sandbox price IDs (Paddle dashboard → Catalog → Products)
@@ -34,13 +34,60 @@ const FIREBASE_PROJECT_ID =
   process.env.FIREBASE_PROJECT_ID ||
   process.env.VITE_FIREBASE_PROJECT_ID ||
   "auditify-74fad";
+const GOOGLE_CERTS_URL =
+  "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
 
-function verifyIdToken(idToken: string) {
-  if (!getApps().length) {
-    // ID-token verification only needs the project ID (Google's public certs).
-    initializeApp({ projectId: FIREBASE_PROJECT_ID });
+// Google rotates these certs; cache for under an hour.
+let certCache: { certs: Record<string, string>; expiresAt: number } | null = null;
+
+async function googleCerts(): Promise<Record<string, string>> {
+  if (certCache && Date.now() < certCache.expiresAt) return certCache.certs;
+  const res = await fetch(GOOGLE_CERTS_URL);
+  if (!res.ok) throw new Error("Could not fetch Google certs.");
+  const certs = (await res.json()) as Record<string, string>;
+  certCache = { certs, expiresAt: Date.now() + 55 * 60 * 1000 };
+  return certs;
+}
+
+function b64url(input: string): Buffer {
+  let s = input.replace(/-/g, "+").replace(/_/g, "/");
+  while (s.length % 4) s += "=";
+  return Buffer.from(s, "base64");
+}
+
+/** Verify a Firebase ID token. Returns the verified uid + email, or throws. */
+async function verifyFirebaseToken(idToken: string): Promise<{ uid: string; email: string }> {
+  const parts = idToken.split(".");
+  if (parts.length !== 3) throw new Error("Malformed token.");
+  const header = JSON.parse(b64url(parts[0]).toString("utf8")) as { kid?: string; alg?: string };
+  const payload = JSON.parse(b64url(parts[1]).toString("utf8")) as {
+    aud?: string;
+    iss?: string;
+    sub?: string;
+    email?: string;
+    exp?: number;
+    iat?: number;
+  };
+  if (header.alg !== "RS256" || !header.kid) throw new Error("Unexpected token algorithm.");
+
+  const cert = (await googleCerts())[header.kid];
+  if (!cert) throw new Error("Unknown signing key.");
+  const key = createPublicKey(cert);
+  const signed = Buffer.from(`${parts[0]}.${parts[1]}`);
+  if (!verify("RSA-SHA256", signed, key, b64url(parts[2]))) {
+    throw new Error("Bad token signature.");
   }
-  return getAuth().verifyIdToken(idToken);
+
+  const now = Math.floor(Date.now() / 1000);
+  if (payload.aud !== FIREBASE_PROJECT_ID) throw new Error("Token not for this project.");
+  if (payload.iss !== `https://securetoken.google.com/${FIREBASE_PROJECT_ID}`) {
+    throw new Error("Bad token issuer.");
+  }
+  if (typeof payload.exp !== "number" || payload.exp < now) throw new Error("Token expired.");
+  if (!payload.sub || typeof payload.email !== "string" || !payload.email) {
+    throw new Error("Token has no identity.");
+  }
+  return { uid: payload.sub, email: payload.email };
 }
 
 type ReqLike = {
@@ -61,17 +108,15 @@ export default async function handler(req: ReqLike, res: ResLike) {
 
   // --- Fail-safe 1: verified sign-in required ---
   const rawAuth = req.headers?.authorization;
-  const idToken = typeof rawAuth === "string" && rawAuth.startsWith("Bearer ") ? rawAuth.slice(7) : null;
+  const idToken =
+    typeof rawAuth === "string" && rawAuth.startsWith("Bearer ") ? rawAuth.slice(7) : null;
   if (!idToken) {
     return res.status(401).json({ error: "Sign in to continue." });
   }
   let uid: string;
   let email: string;
   try {
-    const decoded = await verifyIdToken(idToken);
-    uid = decoded.uid;
-    email = typeof decoded.email === "string" ? decoded.email : "";
-    if (!email) throw new Error("no email");
+    ({ uid, email } = await verifyFirebaseToken(idToken));
   } catch {
     return res.status(401).json({ error: "Session expired. Sign in again." });
   }
