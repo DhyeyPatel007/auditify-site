@@ -13,7 +13,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   },
   {
     title: "Company",
-    links: [{ label: "Contact", href: "mailto:dhyeypatel.work2@gmail.com" }],
+    links: [{ label: "Contact", href: "mailto:contact@auditify.krynex.in" }],
   },
   {
     title: "Legal",

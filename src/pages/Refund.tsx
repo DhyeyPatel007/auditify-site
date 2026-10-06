@@ -34,8 +34,8 @@ export function RefundPage() {
       <h2>How to request a refund</h2>
       <p>
         Email{" "}
-        <a href="mailto:dhyeypatel.work2@gmail.com">
-          dhyeypatel.work2@gmail.com
+        <a href="mailto:contact@auditify.krynex.in">
+          contact@auditify.krynex.in
         </a>{" "}
         with the email address you used at checkout and, if you have it, your
         Paddle receipt. We process approved refunds through Paddle within 2
