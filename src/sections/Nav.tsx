@@ -104,6 +104,14 @@ export function Nav({ user, onSignIn, onSignOut, onAccount }: Props) {
                     </div>
                   </div>
                   <div className="border-t border-line" />
+                  <a
+                    href="/dashboard"
+                    role="menuitem"
+                    onClick={() => setMenuOpen(false)}
+                    className="mt-1 block w-full rounded-lg px-3 py-2.5 text-left text-[14px] font-medium text-ink transition-colors hover:bg-paper"
+                  >
+                    Dashboard
+                  </a>
                   <button
                     type="button"
                     role="menuitem"

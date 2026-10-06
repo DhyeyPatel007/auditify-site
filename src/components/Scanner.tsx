@@ -29,6 +29,8 @@ type Props = {
   onUnlock: () => void;
   /** Firebase UID when signed in — scan results are saved to the account's history. */
   uid: string | null;
+  /** Called after a scan completes and its report is saved (lets the dashboard refresh). */
+  onScanComplete?: () => void;
 };
 
 // The input renders a decorative "https://" prefix span, so the value itself
@@ -49,7 +51,7 @@ const SCAN_STEPS = [
   "Stamping your report…",
 ];
 
-export function Scanner({ onUnlock, uid }: Props) {
+export function Scanner({ onUnlock, uid, onScanComplete }: Props) {
   const [url, setUrl] = useState("");
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [step, setStep] = useState(0);
@@ -93,6 +95,7 @@ export function Scanner({ onUnlock, uid }: Props) {
           checksRun: r.checksRun,
           scannedAt: new Date().toISOString(),
         });
+        onScanComplete?.();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Scan failed. Try again.");

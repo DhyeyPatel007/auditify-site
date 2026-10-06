@@ -22,6 +22,10 @@
     {
       "source": "/refund",
       "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/index.html"
     }
   ],
   "functions": {
