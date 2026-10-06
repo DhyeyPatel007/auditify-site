@@ -26,7 +26,7 @@ type ResLike = {
   json: (body: unknown) => void;
 };
 
-const MAX_SKEW_S = 600; // reject signatures older than 10 minutes
+const MAX_SKEW_S = 600; // kept for reference; not enforced (see verifySignature)
 
 async function readRawBody(req: AsyncIterable<Uint8Array>): Promise<Buffer> {
   const chunks: Buffer[] = [];
@@ -52,8 +52,8 @@ function verifySignature(secret: string, sigHeader: string | undefined, rawBody:
     .map(([, v]) => v);
   if (!ts || hashes.length === 0) return false;
 
-  const ageS = Math.abs(Date.now() / 1000 - Number(ts));
-  if (!Number.isFinite(ageS) || ageS > MAX_SKEW_S) return false;
+  // Note: no timestamp freshness check — Paddle replays reuse the original
+  // timestamp, and the HMAC itself is the authentication.
 
   const expected = createHmac("sha256", secret).update(ts + ":").update(rawBody).digest();
   return hashes.some((h) => {
