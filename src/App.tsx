@@ -9,7 +9,8 @@ import { MonitoringPreview } from "./sections/MonitoringPreview";
 import { WhiteLabel } from "./sections/WhiteLabel";
 import { Features } from "./sections/Features";
 import { Pricing } from "./sections/Pricing";
-import { startCheckout, resumePaddleTransaction } from "./lib/paddle";
+import { startCheckout } from "./lib/paddle";
+import { CheckoutPage } from "./pages/CheckoutPage";
 import { History } from "./sections/History";
 import { Faq } from "./sections/Faq";
 import { CtaBand } from "./sections/CtaBand";
@@ -42,14 +43,6 @@ function Shell() {
   const openAuth = (mode: "signin" | "signup") => setAuth({ open: true, mode });
   const closeAuth = () => setAuth((a) => ({ ...a, open: false }));
 
-  // If we landed here via Paddle's checkout URL (?_ptxn=...), open the
-  // checkout overlay for that transaction instead of showing a dead page.
-  useEffect(() => {
-    resumePaddleTransaction().catch(() => {
-      /* overlay failed — user stays on the page, can retry Buy */
-    });
-  }, []);
-
   /** "Unlock full report" buttons (hero scanner + sample report) use the same
    * gated checkout as the Pricing buy button: sign-in first, then Paddle's
    * hosted checkout; the "opens at launch" dialog only if checkout fails. */
@@ -68,6 +61,13 @@ function Shell() {
   const handleSignOut = useCallback(async () => {
     await signOutUser();
   }, [signOutUser]);
+
+  // Dedicated checkout page: /?checkout=<txnId> (or legacy ?_ptxn=<txnId>).
+  const query = new URLSearchParams(window.location.search);
+  const checkoutTxn = query.get("checkout") || query.get("_ptxn");
+  if (checkoutTxn) {
+    return <CheckoutPage transactionId={checkoutTxn} planName={query.get("plan")} />;
+  }
 
   return (
     <div id="top" className="min-h-screen bg-paper text-ink">
