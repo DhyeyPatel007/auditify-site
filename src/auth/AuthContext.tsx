@@ -207,6 +207,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOutUser = useCallback(async () => {
     if (auth) await signOut(auth);
+    // After logout, land on the marketing site — not a gated page.
+    if ((window.location.pathname.replace(/\/+$/, "") || "/") !== "/") {
+      window.location.href = "/";
+    }
   }, []);
 
   return (
