@@ -69,21 +69,26 @@ export function Pricing({
   onSignIn: () => void;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   /** Paid tiers need a signed-in buyer: no account → sign-in first (the
    * server re-verifies the token, so this gate can't be bypassed). Paid
-   * checkout redirects to Paddle's hosted page; if checkout isn't connected
-   * yet, fall back to the "opens at launch" dialog. */
+   * checkout redirects to Paddle's hosted page; if payments aren't connected
+   * yet, fall back to the "opens at launch" dialog, otherwise show the real
+   * error so it can be fixed. */
   const buyPlan = async (planName: string) => {
     if (!user) {
       onSignIn();
       return;
     }
     setBusy(planName);
+    setCheckoutError(null);
     try {
       await startCheckout(planName, () => user.getIdToken());
-    } catch {
-      onPhase2(planName);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Checkout failed to start.";
+      if (msg === "Payments are not connected yet.") onPhase2(planName);
+      else setCheckoutError(msg);
     } finally {
       setBusy(null);
     }
@@ -114,6 +119,11 @@ export function Pricing({
             automatically.
           </p>
         </div>
+        {checkoutError && (
+          <p className="mt-6 rounded-[10px] border border-accent/40 bg-accent/10 p-4 text-[14px] font-medium text-ink">
+            Checkout couldn&apos;t start: {checkoutError}
+          </p>
+        )}
         <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {TIERS.map((t) => (
             <article

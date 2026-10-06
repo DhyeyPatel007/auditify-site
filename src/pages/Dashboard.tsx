@@ -26,7 +26,7 @@ function DashboardShell() {
   const [phase2Open, setPhase2Open] = useState(false);
   const [reports, setReports] = useState<PastReport[]>([]);
   const [buying, setBuying] = useState<string | null>(null);
-  const [buyError, setBuyError] = useState(false);
+  const [buyError, setBuyError] = useState<string | null>(null);
   const uid = user?.uid ?? null;
 
   const reload = useCallback(() => {
@@ -49,12 +49,12 @@ function DashboardShell() {
 
   const buyPlan = async (planName: string) => {
     if (!user) return; // dashboard is auth-gated; belt and suspenders
-    setBuyError(false);
+    setBuyError(null);
     setBuying(planName);
     try {
       await startCheckout(planName, () => user.getIdToken());
-    } catch {
-      setBuyError(true);
+    } catch (e) {
+      setBuyError(e instanceof Error ? e.message : "Checkout failed to start.");
     } finally {
       setBuying(null);
     }
@@ -217,7 +217,7 @@ function DashboardShell() {
               </ul>
               {buyError && (
                 <p className="mt-4 text-[14px] font-medium text-accent">
-                  Checkout isn&apos;t connected yet — it opens with the launch.
+                  Checkout couldn&apos;t start: {buyError}
                 </p>
               )}
             </section>
