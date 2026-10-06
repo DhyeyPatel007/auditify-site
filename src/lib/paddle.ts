@@ -1,71 +1,22 @@
 /**
- * Paddle checkout (Paddle Billing / paddle.js v2).
+ * Hosted checkout via Paddle.
  *
- * Sandbox while VITE_PADDLE_ENV !== "production". Price IDs below are the
- * SANDBOX ids — replace with live ids when Paddle moves to production.
- * The client-side token comes from VITE_PADDLE_TOKEN (public by design).
+ * The server (api/paddle-transaction.ts) creates the transaction with the
+ * secret API key and returns Paddle's hosted checkout URL; we redirect the
+ * buyer there. No Paddle.js overlay — a proper full checkout page.
+ *
+ * Throws when checkout can't start; callers fall back to the "coming soon"
+ * dialog in that case.
  */
-
-const PRICE_IDS: Record<string, string> = {
-  // Sandbox price IDs (Paddle dashboard → Catalog → Products)
-  "One-time report": "pri_01m47vk1tcvrfe2gagdajzwz43",
-  Monitoring: "pri_01m47vmey48r4qctyn3drjq2ts",
-  "Agency white-label": "pri_01m47vnw1q4tap949d754c17dm",
-};
-
-type PaddleCheckoutOptions = {
-  items: { priceId: string; quantity: number }[];
-  customer?: { email?: string };
-};
-
-type PaddleInstance = {
-  Environment: { set: (env: "sandbox" | "production") => void };
-  Initialize: (opts: { token: string }) => void;
-  Checkout: { open: (opts: PaddleCheckoutOptions) => void };
-};
-
-declare global {
-  interface Window {
-    Paddle?: PaddleInstance;
+export async function startCheckout(planName: string, email?: string | null): Promise<void> {
+  const res = await fetch("/api/paddle-transaction", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ plan: planName, ...(email ? { email } : {}) }),
+  });
+  const data = (await res.json().catch(() => null)) as { url?: string; error?: string } | null;
+  if (!res.ok || !data?.url) {
+    throw new Error(data?.error || "Checkout failed to start.");
   }
-}
-
-let paddleReady: Promise<void> | null = null;
-
-function loadPaddle(): Promise<void> {
-  if (paddleReady) return paddleReady;
-  paddleReady = new Promise<void>((resolve, reject) => {
-    if (window.Paddle) {
-      resolve();
-      return;
-    }
-    const s = document.createElement("script");
-    s.src = "https://cdn.paddle.com/paddle/v2/paddle.js";
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error("Paddle.js failed to load."));
-    document.head.appendChild(s);
-  }).then(() => {
-    const token = import.meta.env.VITE_PADDLE_TOKEN as string | undefined;
-    if (!token) throw new Error("Checkout is not connected yet.");
-    const env = import.meta.env.VITE_PADDLE_ENV === "production" ? "production" : "sandbox";
-    window.Paddle!.Environment.set(env);
-    window.Paddle!.Initialize({ token });
-  });
-  return paddleReady;
-}
-
-/**
- * Open Paddle checkout for a plan ("One-time report" | "Monitoring" |
- * "Agency white-label"). Throws when Paddle isn't configured — callers fall
- * back to the "coming soon" dialog in that case.
- */
-export async function openCheckout(planName: string, email?: string | null): Promise<void> {
-  const priceId = PRICE_IDS[planName];
-  if (!priceId) throw new Error(`No price configured for "${planName}".`);
-  await loadPaddle();
-  window.Paddle!.Checkout.open({
-    items: [{ priceId, quantity: 1 }],
-    ...(email ? { customer: { email } } : {}),
-  });
+  window.location.href = data.url;
 }

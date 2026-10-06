@@ -1,5 +1,5 @@
 import { DISCOUNT_OFFERS, PLANS, formatPrice } from "../lib/plans";
-import { openCheckout } from "../lib/paddle";
+import { startCheckout } from "../lib/paddle";
 import { useState } from "react";
 
 type Tier = {
@@ -67,12 +67,12 @@ export function Pricing({
 }) {
   const [busy, setBusy] = useState<string | null>(null);
 
-  /** Paid tiers open Paddle checkout; if checkout isn't connected yet,
-   * fall back to the "opens at launch" dialog. */
+  /** Paid tiers redirect to Paddle's hosted checkout; if checkout isn't
+   * connected yet, fall back to the "opens at launch" dialog. */
   const buyPlan = async (planName: string) => {
     setBusy(planName);
     try {
-      await openCheckout(planName, email);
+      await startCheckout(planName, email);
     } catch {
       onPhase2(planName);
     } finally {
@@ -147,7 +147,7 @@ export function Pricing({
                       : "bg-ink text-paper hover:bg-[#2A251F]"
                   }`}
                 >
-                  {busy === t.name ? "Opening checkout…" : t.cta}
+                  {busy === t.name ? "Redirecting…" : t.cta}
                 </button>
               ) : (
                 <a

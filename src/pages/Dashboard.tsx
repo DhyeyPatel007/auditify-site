@@ -8,7 +8,7 @@ import { AccountModal } from "../components/AccountModal";
 import { Phase2Modal } from "../components/Phase2Modal";
 import { GradeStamp, type Grade } from "../components/Stamps";
 import { PLANS, formatPrice } from "../lib/plans";
-import { openCheckout } from "../lib/paddle";
+import { startCheckout } from "../lib/paddle";
 import { clearReports, listReports, type PastReport } from "../lib/reports";
 
 /**
@@ -51,7 +51,7 @@ function DashboardShell() {
     setBuyError(false);
     setBuying(planName);
     try {
-      await openCheckout(planName, user?.email ?? null);
+      await startCheckout(planName, user?.email ?? null);
     } catch {
       setBuyError(true);
     } finally {
