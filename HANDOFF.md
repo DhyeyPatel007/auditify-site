@@ -55,8 +55,8 @@ Small businesses + agencies + developers. **Deliberately broad** — owner is a 
 | `launch/` | Launch docs: readiness, next-steps, marketing plan, social captions, canva links, auth-paddle checklist |
 | `accuracy/` | Ground-truth + test harnesses from the 2026-10-04 accuracy audit |
 
-### Routes (all need Vercel rewrites — 6 exist in vercel.json)
-`/`, `/terms`, `/privacy`, `/refund`, `/methodology`, `/teardowns`, `/teardowns/:slug`, `/auth-debug` (hidden)
+### Routes (all need Vercel rewrites — 7 exist in vercel.json)
+`/`, `/terms`, `/privacy`, `/refund`, `/methodology`, `/teardowns`, `/teardowns/:slug`, `/dashboard` (login-gated per-user screen, shipped 2026-10-06; `/auth-debug` removed)
 
 ---
 
