@@ -115,7 +115,7 @@ Small businesses + agencies + developers. **Deliberately broad** — owner is a 
 
 **Working live:** marketing site, free scanner (35+ checks), Google + email/password auth, avatars, scan history, teardowns, methodology, refund/terms/privacy pages, rate limiting (in-memory, 1 scan/day/IP — preview-grade, not durable across serverless instances).
 
-**Not yet working:** payments (no checkout, no webhook — Paddle products don't exist yet), monitoring/agency features (preview mocks only), analytics (none).
+**Not yet working:** payments (see Paddle build 2026-10-06 below), monitoring/agency features (preview mocks only), analytics (none).
 
 **PageSpeed 2026-10-05:** 99/96/100/100 mobile, 100/96/100/100 desktop (perf/accessibility/best-practices/SEO). **Accessibility fix shipped 2026-10-06** — `--color-muted` → `#726c62` (4.70:1), `--color-warning` → `#946117` (4.76:1), both WCAG AA on paper (commit `316c0cd`). Re-run PageSpeed on the live URL to confirm 100s.
 
@@ -131,12 +131,9 @@ Small businesses + agencies + developers. **Deliberately broad** — owner is a 
 5. Confirm public contact email (temp `dhyeypatel.work2@gmail.com` → ideally `hello@krynex.in`).
 6. Accessibility call: fix contrast or launch at 96.
 
-### Next agent's lane (once owner delivers)
-1. Build Paddle checkout (Paddle.js) on pricing buttons using sandbox price IDs.
-2. Build webhook endpoint (verify Paddle signature) → fulfill: unlock full report, activate monitoring/agency.
-3. Sandbox end-to-end test → swap to live IDs → live test.
-4. Remove/hide `/auth-debug`.
-5. Optional: privacy-compatible analytics; durable rate limiting (Redis/Upstash) if abuse appears.
+### Next agent's lane
+1. **Paddle build — DONE 2026-10-06 (sandbox):** `src/lib/paddle.ts` (paddle.js v2 loader, sandbox price IDs mapped by plan name, token from `VITE_PADDLE_TOKEN`); pricing buttons + dashboard plan-card buttons open real checkout (graceful fallback to "opens at launch" dialog when token missing); `api/paddle-webhook.ts` verifies `Paddle-Signature` (HMAC-SHA256, 10-min skew, fail-closed without `PADDLE_WEBHOOK_SECRET`) and routes `transaction.completed` → fulfillment via `custom_data.plan`; CSP allows cdn.paddle.com + *.paddle.com. Verified live: GET→405, unsigned POST→500 fail-closed. **Still needed from owner:** (a) sandbox client-side token (`test_…`, Developer Tools → Authentication); (b) Vercel env `VITE_PADDLE_TOKEN` (Config) + redeploy; (c) register webhook URL `https://auditify.krynex.in/api/paddle-webhook` in Paddle → Notifications, then Vercel env `PADDLE_WEBHOOK_SECRET`; (d) sandbox test purchase → confirm FULFILL in Vercel logs. Fulfillment currently logs only — Firestore entitlements + paid-report unlock are the next build once paid features exist.
+2. Remove/hide `/auth-debug` — **DONE 2026-10-06** (verified 404).
 
 ---
 
