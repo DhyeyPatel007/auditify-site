@@ -1,4 +1,6 @@
 import { DISCOUNT_OFFERS, PLANS, formatPrice } from "../lib/plans";
+import { openCheckout } from "../lib/paddle";
+import { useState } from "react";
 
 type Tier = {
   name: string;
@@ -56,7 +58,28 @@ const TIERS: Tier[] = PLANS.map((p) => ({
   price: formatPrice(p.price),
 }));
 
-export function Pricing({ onPhase2 }: { onPhase2: (context: string) => void }) {
+export function Pricing({
+  onPhase2,
+  email,
+}: {
+  onPhase2: (context: string) => void;
+  email: string | null;
+}) {
+  const [busy, setBusy] = useState<string | null>(null);
+
+  /** Paid tiers open Paddle checkout; if checkout isn't connected yet,
+   * fall back to the "opens at launch" dialog. */
+  const buyPlan = async (planName: string) => {
+    setBusy(planName);
+    try {
+      await openCheckout(planName, email);
+    } catch {
+      onPhase2(planName);
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <section id="pricing" className="border-b border-line" aria-labelledby="pricing-heading">
       <div className="mx-auto max-w-[1120px] px-6 py-16 md:py-24">
@@ -116,14 +139,15 @@ export function Pricing({ onPhase2 }: { onPhase2: (context: string) => void }) {
               {t.phase2 ? (
                 <button
                   type="button"
-                  onClick={() => onPhase2(t.name)}
+                  disabled={busy === t.name}
+                  onClick={() => void buyPlan(t.name)}
                   className={`mt-6 min-h-[48px] w-full rounded-lg px-5 text-[15px] font-medium transition-colors ${
                     t.popular
                       ? "bg-accent text-white hover:bg-accent-hover"
                       : "bg-ink text-paper hover:bg-[#2A251F]"
                   }`}
                 >
-                  {t.cta}
+                  {busy === t.name ? "Opening checkout…" : t.cta}
                 </button>
               ) : (
                 <a

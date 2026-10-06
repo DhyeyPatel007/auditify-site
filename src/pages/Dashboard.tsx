@@ -8,6 +8,7 @@ import { AccountModal } from "../components/AccountModal";
 import { Phase2Modal } from "../components/Phase2Modal";
 import { GradeStamp, type Grade } from "../components/Stamps";
 import { PLANS, formatPrice } from "../lib/plans";
+import { openCheckout } from "../lib/paddle";
 import { clearReports, listReports, type PastReport } from "../lib/reports";
 
 /**
@@ -24,6 +25,8 @@ function DashboardShell() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [phase2Open, setPhase2Open] = useState(false);
   const [reports, setReports] = useState<PastReport[]>([]);
+  const [buying, setBuying] = useState<string | null>(null);
+  const [buyError, setBuyError] = useState(false);
   const uid = user?.uid ?? null;
 
   const reload = useCallback(() => {
@@ -43,6 +46,18 @@ function DashboardShell() {
 
   const firstName = user?.displayName?.split(" ")[0];
   const paidPlans = PLANS.filter((p) => p.name !== "Free");
+
+  const buyPlan = async (planName: string) => {
+    setBuyError(false);
+    setBuying(planName);
+    try {
+      await openCheckout(planName, user?.email ?? null);
+    } catch {
+      setBuyError(true);
+    } finally {
+      setBuying(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-paper text-ink">
@@ -190,14 +205,20 @@ function DashboardShell() {
                     </p>
                     <button
                       type="button"
-                      disabled
-                      className="mt-4 cursor-not-allowed rounded-[8px] border border-line px-4 py-2 text-[13px] font-semibold text-ink-2"
+                      disabled={buying === p.name}
+                      onClick={() => void buyPlan(p.name)}
+                      className="mt-4 rounded-[8px] bg-ink px-4 py-2 text-[13px] font-semibold text-paper transition-colors hover:bg-accent disabled:opacity-60"
                     >
-                      Coming soon
+                      {buying === p.name ? "Opening…" : "Buy now"}
                     </button>
                   </li>
                 ))}
               </ul>
+              {buyError && (
+                <p className="mt-4 text-[14px] font-medium text-accent">
+                  Checkout isn&apos;t connected yet — it opens with the launch.
+                </p>
+              )}
             </section>
           </>
         )}
