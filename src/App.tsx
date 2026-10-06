@@ -9,6 +9,7 @@ import { MonitoringPreview } from "./sections/MonitoringPreview";
 import { WhiteLabel } from "./sections/WhiteLabel";
 import { Features } from "./sections/Features";
 import { Pricing } from "./sections/Pricing";
+import { startCheckout } from "./lib/paddle";
 import { History } from "./sections/History";
 import { Faq } from "./sections/Faq";
 import { CtaBand } from "./sections/CtaBand";
@@ -41,6 +42,21 @@ function Shell() {
   const openAuth = (mode: "signin" | "signup") => setAuth({ open: true, mode });
   const closeAuth = () => setAuth((a) => ({ ...a, open: false }));
 
+  /** "Unlock full report" buttons (hero scanner + sample report) use the same
+   * gated checkout as the Pricing buy button: sign-in first, then Paddle's
+   * hosted checkout; the "opens at launch" dialog only if checkout fails. */
+  const buyReport = async () => {
+    if (!user) {
+      openAuth("signin");
+      return;
+    }
+    try {
+      await startCheckout("One-time report", () => user.getIdToken());
+    } catch {
+      openPhase2("Full report");
+    }
+  };
+
   const handleSignOut = useCallback(async () => {
     await signOutUser();
   }, [signOutUser]);
@@ -64,10 +80,10 @@ function Shell() {
         onAccount={() => setAccountOpen(true)}
       />
       <main>
-        <Hero onUnlock={() => openPhase2("Full report")} uid={user?.uid ?? null} />
+        <Hero onUnlock={() => void buyReport()} uid={user?.uid ?? null} />
         <Transformations />
         <HowItWorks />
-        <SampleReport onUnlock={() => openPhase2("Full report")} />
+        <SampleReport onUnlock={() => void buyReport()} />
         <Compare />
         <MonitoringPreview />
         <WhiteLabel />
