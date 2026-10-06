@@ -157,12 +157,13 @@ export default async function handler(req: ReqLike, res: ResLike) {
   }
 
   const data = (await apiRes.json().catch(() => null)) as {
-    data?: { checkout?: { url?: string } };
+    data?: { id?: string; checkout?: { url?: string } };
   } | null;
+  const transactionId = data?.data?.id;
   const url = data?.data?.checkout?.url;
-  if (!apiRes.ok || !url) {
+  if (!apiRes.ok || !transactionId) {
     console.error("[paddle] transaction create failed:", apiRes.status);
     return res.status(502).json({ error: "Could not start checkout. Try again." });
   }
-  return res.status(200).json({ url });
+  return res.status(200).json({ transactionId, url });
 }
