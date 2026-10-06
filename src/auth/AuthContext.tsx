@@ -148,6 +148,13 @@ async function signInWithGoogleViaGis(authInstance: Auth): Promise<void> {
   await signInWithCredential(authInstance, GoogleAuthProvider.credential(null, accessToken));
 }
 
+/** After a fresh sign-in, take the user to their dashboard — not the marketing site. */
+function goToDashboard() {
+  if (window.location.pathname.replace(/\/+$/, "") !== "/dashboard") {
+    window.location.href = "/dashboard";
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -179,10 +186,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // GIS direct flow: Google popup -> access token -> Firebase credential.
     // Bypasses Firebase's handler/iframe/redirect round-trip entirely.
     await signInWithGoogleViaGis(needAuth());
+    goToDashboard();
   }, []);
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
     await signInWithEmailAndPassword(needAuth(), email.trim(), password);
+    goToDashboard();
   }, []);
 
   const signUpWithEmail = useCallback(
@@ -191,6 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (name?.trim()) {
         await updateProfile(cred.user, { displayName: name.trim() });
       }
+      goToDashboard();
     },
     []
   );
