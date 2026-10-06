@@ -102,7 +102,7 @@ Small businesses + agencies + developers. **Deliberately broad** — owner is a 
 - Google sign-in failed for hours (`auth/internal-error`, silent redirect death). Root causes found: our CSP blocked `apis.google.com` + Firebase auth iframe; GCP API-key referrer restrictions blocked Firebase's own handler domain; redirect return-trip lost its event silently.
 - **Fix that worked:** bypass Firebase's `/__/auth/handler` entirely — **Google Identity Services direct token flow** in `src/auth/AuthContext.tsx` (`initTokenClient` → access token → `signInWithCredential`). Owner confirmed working 2026-10-05 ~21:19 IST. Email/password sign-up verified working via browser test.
 - Clean avatars shipped: Google photo in circle, or tonal initials (deterministic per user) with photo-fallback. Account dropdown shows avatar + name + email.
-- `/auth-debug` diagnostics page was the tool that cracked it — **remove or hide before public launch.**
+- `/auth-debug` diagnostics page was the tool that cracked it — **removed 2026-10-06** (commit `316c0cd`, verified 404 live).
 - **Still needed:** publish the Google OAuth consent screen (currently Testing mode; instant, no review — Firebase uses non-sensitive scopes only).
 
 ### Paddle (2026-10-05)
@@ -117,7 +117,7 @@ Small businesses + agencies + developers. **Deliberately broad** — owner is a 
 
 **Not yet working:** payments (no checkout, no webhook — Paddle products don't exist yet), monitoring/agency features (preview mocks only), analytics (none).
 
-**PageSpeed 2026-10-05:** 99/96/100/100 mobile, 100/96/100/100 desktop (perf/accessibility/best-practices/SEO). **Launch gate (100/100/100/100) NOT met** — the one real blocker is Accessibility 96, from muted/warning text in sample-report sections failing 4.5:1 contrast on paper. **His call:** darken those text tokens and re-run, or launch at 96.
+**PageSpeed 2026-10-05:** 99/96/100/100 mobile, 100/96/100/100 desktop (perf/accessibility/best-practices/SEO). **Accessibility fix shipped 2026-10-06** — `--color-muted` → `#726c62` (4.70:1), `--color-warning` → `#946117` (4.76:1), both WCAG AA on paper (commit `316c0cd`). Re-run PageSpeed on the live URL to confirm 100s.
 
 ---
 
