@@ -7,13 +7,11 @@ import { MethodologyPage } from "./pages/Methodology";
 import { TeardownsPage } from "./pages/Teardowns";
 import { TeardownPostPage } from "./pages/TeardownPost";
 import { RefundPage } from "./pages/Refund";
-import { AuthDebugPage } from "./pages/AuthDebug";
 import "./index.css";
 
 const path = window.location.pathname.replace(/\/+$/, "") || "/";
 
 function Route() {
-  if (path === "/auth-debug") return <AuthDebugPage />;
   if (path === "/terms") return <TermsPage />;
   if (path === "/privacy") return <PrivacyPage />;
   if (path === "/refund") return <RefundPage />;

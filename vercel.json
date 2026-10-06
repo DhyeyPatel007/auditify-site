@@ -22,10 +22,6 @@
     {
       "source": "/refund",
       "destination": "/index.html"
-    },
-    {
-      "source": "/auth-debug",
-      "destination": "/index.html"
     }
   ],
   "functions": {
