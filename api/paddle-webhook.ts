@@ -55,7 +55,7 @@ function verifySignature(secret: string, sigHeader: string | undefined, rawBody:
   const ageS = Math.abs(Date.now() / 1000 - Number(ts));
   if (!Number.isFinite(ageS) || ageS > MAX_SKEW_S) return false;
 
-  const expected = createHmac("sha256", secret).update(ts + ";").update(rawBody).digest();
+  const expected = createHmac("sha256", secret).update(ts + ":").update(rawBody).digest();
   return hashes.some((h) => {
     const got = Buffer.from(h, "hex");
     return got.length === expected.length && timingSafeEqual(got, expected);
