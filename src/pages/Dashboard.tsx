@@ -48,10 +48,11 @@ function DashboardShell() {
   const paidPlans = PLANS.filter((p) => p.name !== "Free");
 
   const buyPlan = async (planName: string) => {
+    if (!user) return; // dashboard is auth-gated; belt and suspenders
     setBuyError(false);
     setBuying(planName);
     try {
-      await startCheckout(planName, user?.email ?? null);
+      await startCheckout(planName, () => user.getIdToken());
     } catch {
       setBuyError(true);
     } finally {

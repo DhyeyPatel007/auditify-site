@@ -72,7 +72,7 @@ function Shell() {
         <MonitoringPreview />
         <WhiteLabel />
         <Features />
-        <Pricing onPhase2={openPhase2} email={user?.email ?? null} />
+        <Pricing onPhase2={openPhase2} user={user} onSignIn={() => openAuth("signin")} />
         <History uid={user?.uid ?? null} />
         <Faq />
         <CtaBand />

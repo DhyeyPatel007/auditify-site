@@ -1,6 +1,7 @@
 import { DISCOUNT_OFFERS, PLANS, formatPrice } from "../lib/plans";
 import { startCheckout } from "../lib/paddle";
 import { useState } from "react";
+import type { User } from "firebase/auth";
 
 type Tier = {
   name: string;
@@ -60,19 +61,27 @@ const TIERS: Tier[] = PLANS.map((p) => ({
 
 export function Pricing({
   onPhase2,
-  email,
+  user,
+  onSignIn,
 }: {
   onPhase2: (context: string) => void;
-  email: string | null;
+  user: User | null;
+  onSignIn: () => void;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
 
-  /** Paid tiers redirect to Paddle's hosted checkout; if checkout isn't
-   * connected yet, fall back to the "opens at launch" dialog. */
+  /** Paid tiers need a signed-in buyer: no account → sign-in first (the
+   * server re-verifies the token, so this gate can't be bypassed). Paid
+   * checkout redirects to Paddle's hosted page; if checkout isn't connected
+   * yet, fall back to the "opens at launch" dialog. */
   const buyPlan = async (planName: string) => {
+    if (!user) {
+      onSignIn();
+      return;
+    }
     setBusy(planName);
     try {
-      await startCheckout(planName, email);
+      await startCheckout(planName, () => user.getIdToken());
     } catch {
       onPhase2(planName);
     } finally {
