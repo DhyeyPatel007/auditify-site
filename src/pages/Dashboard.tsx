@@ -16,7 +16,7 @@ import { clearReports, listReports, type PastReport } from "../lib/reports";
  * Anonymous visitors get a sign-in gate, not the marketing page.
  */
 function DashboardShell() {
-  const { user, signOutUser } = useAuth();
+  const { user, loading, signOutUser } = useAuth();
   const [auth, setAuth] = useState<{ open: boolean; mode: "signin" | "signup" }>({
     open: false,
     mode: "signin",
@@ -57,7 +57,12 @@ function DashboardShell() {
         onAccount={() => setAccountOpen(true)}
       />
       <main className="mx-auto max-w-[1120px] px-6 py-12 md:py-16">
-        {!user ? (
+        {loading ? (
+          <div className="py-24 text-center" aria-label="Loading">
+            <p className="eyebrow text-ink-2">Dashboard</p>
+            <div className="mx-auto mt-8 h-2 w-40 animate-pulse rounded-full bg-line-strong" />
+          </div>
+        ) : !user ? (
           <div className="mx-auto max-w-[560px] py-16 text-center">
             <p className="eyebrow text-ink-2">Dashboard</p>
             <h1 className="mt-4 font-display text-[36px] font-semibold sm:text-[44px]">
