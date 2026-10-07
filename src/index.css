@@ -60,6 +60,36 @@ body {
   }
 }
 
+/* Print styles for full report PDF export */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  article[aria-label^="Audit report"],
+  article[aria-label^="Audit report"] * {
+    visibility: visible;
+  }
+  article[aria-label^="Audit report"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  /* Hide interactive elements in print */
+  button {
+    display: none !important;
+  }
+  /* Expand all details for print */
+  details {
+    display: block !important;
+  }
+  details > summary {
+    list-style: none !important;
+  }
+}
+
 /* Paddle checkout frame fixes — Paddle.js mispositions its iframe on this
    page (tiny bottom-left). Force it into a usable centered frame. */
 iframe.paddle-frame {

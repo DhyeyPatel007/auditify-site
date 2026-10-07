@@ -294,7 +294,16 @@ export function Scanner({ onUnlock, uid, onScanComplete, hasFullAccess, getIdTok
               </div>
             )}
 
-            <div className="mt-6 border-t border-line pt-4">
+            <div className="mt-6 border-t border-line pt-4 flex flex-wrap gap-3">
+              {result.full && (
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="min-h-[44px] rounded-lg bg-ink px-5 py-2.5 text-sm font-medium text-paper hover:bg-accent"
+                >
+                  Print / Save as PDF
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
