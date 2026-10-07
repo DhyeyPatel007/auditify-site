@@ -23,6 +23,7 @@ type ScanResult = {
   summary: { pass: number; warn: number; fail: number };
   issues: Issue[];
   locked: LockedTeaser[];
+  full?: boolean;
 };
 
 type Props = {
@@ -31,6 +32,10 @@ type Props = {
   uid: string | null;
   /** Called after a scan completes and its report is saved (lets the dashboard refresh). */
   onScanComplete?: () => void;
+  /** When true, the user has a paid plan — fetch the full unlocked report. */
+  hasFullAccess?: boolean;
+  /** Returns a Firebase ID token for authenticated full-report requests. */
+  getIdToken?: () => Promise<string>;
 };
 
 // The input renders a decorative "https://" prefix span, so the value itself
@@ -51,7 +56,7 @@ const SCAN_STEPS = [
   "Stamping your report…",
 ];
 
-export function Scanner({ onUnlock, uid, onScanComplete }: Props) {
+export function Scanner({ onUnlock, uid, onScanComplete, hasFullAccess, getIdToken }: Props) {
   const [url, setUrl] = useState("");
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [step, setStep] = useState(0);
@@ -72,10 +77,16 @@ export function Scanner({ onUnlock, uid, onScanComplete }: Props) {
       1400
     );
     try {
+      const body: { url: string; full?: boolean; idToken?: string } = { url: target };
+      // Paid users get the full unlocked report
+      if (hasFullAccess && getIdToken) {
+        body.full = true;
+        body.idToken = await getIdToken();
+      }
       const res = await fetch("/api/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: target }),
+        body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -205,7 +216,7 @@ export function Scanner({ onUnlock, uid, onScanComplete }: Props) {
         >
           <div className="border-b border-line px-6 py-4 sm:px-8">
             <div className="flex items-center justify-between gap-4">
-              <p className="eyebrow text-ink-2">Free audit</p>
+              <p className="eyebrow text-ink-2">{result.full ? "Full report" : "Free audit"}</p>
               <p className="truncate font-mono text-[13px] text-ink-2">{result.host}</p>
             </div>
           </div>
@@ -226,7 +237,9 @@ export function Scanner({ onUnlock, uid, onScanComplete }: Props) {
             </div>
 
             <div className="mt-6">
-              <p className="eyebrow mb-1 text-ink-2">Top issues — free</p>
+              <p className="eyebrow mb-1 text-ink-2">
+                {result.full ? `All issues — ${result.issues.length} found` : "Top issues — free"}
+              </p>
               {result.issues.map((issue) => (
                 <details key={issue.id} className="group border-b border-line last:border-b-0">
                   <summary className="flex cursor-pointer list-none items-center gap-4 py-3.5 [&::-webkit-details-marker]:hidden">

@@ -10,6 +10,7 @@ import { GradeStamp, type Grade } from "../components/Stamps";
 import { PLANS, formatPrice } from "../lib/plans";
 import { startCheckout } from "../lib/paddle";
 import { clearReports, listReports, type PastReport } from "../lib/reports";
+import { fetchEntitlements, planName, type Entitlements } from "../lib/entitlements";
 
 /**
  * /dashboard — the signed-in user's own screen.
@@ -27,6 +28,7 @@ function DashboardShell() {
   const [reports, setReports] = useState<PastReport[]>([]);
   const [buying, setBuying] = useState<string | null>(null);
   const [buyError, setBuyError] = useState<string | null>(null);
+  const [entitlements, setEntitlements] = useState<Entitlements | null>(null);
   const uid = user?.uid ?? null;
 
   const reload = useCallback(() => {
@@ -36,6 +38,27 @@ function DashboardShell() {
   useEffect(() => {
     reload();
   }, [reload]);
+
+  // Fetch paid entitlements when signed in
+  useEffect(() => {
+    if (!user) {
+      setEntitlements(null);
+      return;
+    }
+    let cancelled = false;
+    fetchEntitlements(() => user.getIdToken())
+      .then((e) => {
+        if (!cancelled) setEntitlements(e);
+      })
+      .catch(() => {
+        if (!cancelled) setEntitlements({ report: false, monitoring: false, agency: false });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const currentPlan = entitlements ? planName(entitlements) : "Free";
 
   const when = (iso: string) =>
     new Date(iso).toLocaleDateString(undefined, {
@@ -114,6 +137,8 @@ function DashboardShell() {
                 onUnlock={() => setPhase2Open(true)}
                 uid={uid}
                 onScanComplete={reload}
+                hasFullAccess={!!entitlements && (entitlements.report || entitlements.monitoring || entitlements.agency)}
+                getIdToken={user ? () => user.getIdToken() : undefined}
               />
             </section>
 
@@ -183,19 +208,29 @@ function DashboardShell() {
                 Your plan
               </h2>
               <ul className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <li className="rounded-[10px] border-2 border-ink bg-surface p-6">
+                <li
+                  className={`rounded-[10px] border p-6 ${
+                    currentPlan === "Free"
+                      ? "border-2 border-ink bg-surface"
+                      : "border border-line bg-surface"
+                  }`}
+                >
                   <p className="font-display text-[20px] font-semibold">Free</p>
                   <p className="mt-2 font-mono text-[13px] text-ink-2">
                     {formatPrice(0)}/forever
                   </p>
-                  <p className="mt-4 inline-block rounded-full bg-ink px-3 py-1 text-[12px] font-semibold text-paper">
-                    Current plan
-                  </p>
+                  {currentPlan === "Free" && (
+                    <p className="mt-4 inline-block rounded-full bg-ink px-3 py-1 text-[12px] font-semibold text-paper">
+                      Current plan
+                    </p>
+                  )}
                 </li>
                 {paidPlans.map((p) => (
                   <li
                     key={p.name}
-                    className="rounded-[10px] border border-line bg-surface p-6"
+                    className={`rounded-[10px] border bg-surface p-6 ${
+                      currentPlan === p.name ? "border-2 border-ink" : "border-line"
+                    }`}
                   >
                     <p className="font-display text-[20px] font-semibold">
                       {p.name}
@@ -204,14 +239,20 @@ function DashboardShell() {
                       {formatPrice(p.price)}
                       {p.per}
                     </p>
-                    <button
-                      type="button"
-                      disabled={buying === p.name}
-                      onClick={() => void buyPlan(p.name)}
-                      className="mt-4 rounded-[8px] bg-ink px-4 py-2 text-[13px] font-semibold text-paper transition-colors hover:bg-accent disabled:opacity-60"
-                    >
-                      {buying === p.name ? "Opening…" : "Buy now"}
-                    </button>
+                    {currentPlan === p.name ? (
+                      <p className="mt-4 inline-block rounded-full bg-ink px-3 py-1 text-[12px] font-semibold text-paper">
+                        Current plan
+                      </p>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={buying === p.name}
+                        onClick={() => void buyPlan(p.name)}
+                        className="mt-4 rounded-[8px] bg-ink px-4 py-2 text-[13px] font-semibold text-paper transition-colors hover:bg-accent disabled:opacity-60"
+                      >
+                        {buying === p.name ? "Opening…" : "Buy now"}
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>

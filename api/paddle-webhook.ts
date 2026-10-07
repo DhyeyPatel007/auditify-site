@@ -26,7 +26,8 @@ type ResLike = {
   json: (body: unknown) => void;
 };
 
-const MAX_SKEW_S = 600; // kept for reference; not enforced (see verifySignature)
+// Timestamp freshness is not enforced — Paddle replays reuse the original
+// timestamp, and the HMAC itself is the authentication.
 
 async function readRawBody(req: AsyncIterable<Uint8Array>): Promise<Buffer> {
   const chunks: Buffer[] = [];

@@ -976,15 +976,42 @@ export default async function handler(req: ReqLike, res: ResLike) {
   }
 
   let rawUrl: unknown;
+  let fullReport = false;
+  let idToken: string | null = null;
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
     rawUrl = (body as { url?: unknown } | null)?.url;
+    fullReport = (body as { full?: unknown } | null)?.full === true;
+    const t = (body as { idToken?: unknown } | null)?.idToken;
+    idToken = typeof t === "string" ? t : null;
   } catch {
     rawUrl = undefined;
   }
   if (typeof rawUrl !== "string") {
     res.status(400).json({ error: "Send a JSON body like {\"url\": \"example.com\"}." });
     return;
+  }
+
+  // Full report requires paid entitlement — verified via Firebase token + Paddle.
+  let isFull = false;
+  if (fullReport) {
+    if (!idToken) {
+      res.status(401).json({ error: "Sign in to view the full report." });
+      return;
+    }
+    try {
+      const { verifyFirebaseToken, getEntitlements, canViewFullReport } = await import("./_entitlements");
+      const { email } = await verifyFirebaseToken(idToken);
+      const ent = await getEntitlements(email);
+      if (!canViewFullReport(ent)) {
+        res.status(403).json({ error: "Full report requires a paid plan." });
+        return;
+      }
+      isFull = true;
+    } catch {
+      res.status(401).json({ error: "Could not verify your plan. Sign in again." });
+      return;
+    }
   }
 
   // Rate limit before doing any work
@@ -1037,7 +1064,8 @@ export default async function handler(req: ReqLike, res: ResLike) {
     const problems = checks
       .filter((k) => k.severity !== "pass")
       .sort((a, b) => b.weight - a.weight || (a.severity === "fail" ? -1 : 1));
-    const issues = problems.slice(0, 3).map((k) => ({
+    // Full report (paid): all issues unlocked. Free: top 3 + locked teasers.
+    const issues = (isFull ? problems : problems.slice(0, 3)).map((k) => ({
       id: k.id,
       title: k.title,
       severity: k.severity.toUpperCase(),
@@ -1045,7 +1073,7 @@ export default async function handler(req: ReqLike, res: ResLike) {
       detail: k.detail,
       fix: k.fix,
     }));
-    const locked = problems.slice(3).map((k) => ({ title: k.title, metric: k.metric }));
+    const locked = isFull ? [] : problems.slice(3).map((k) => ({ title: k.title, metric: k.metric }));
 
     seen.set(ip, today);
 
@@ -1059,6 +1087,7 @@ export default async function handler(req: ReqLike, res: ResLike) {
       summary: counts,
       issues,
       locked,
+      full: isFull,
     });
   } catch (err) {
     const status = err instanceof ScanError ? err.status : 500;
