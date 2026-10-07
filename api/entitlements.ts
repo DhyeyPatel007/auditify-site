@@ -14,9 +14,9 @@ const GOOGLE_CERTS_URL =
   "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
 
 const PRICE_IDS = {
-  report: "pri_01m47vk1tcvrfe2gagdajzwz43",
-  monitoring: "pri_01m47vmey48r4qctyn3drjq2ts",
-  agency: "pri_01m47vnw1q4tap949d754c17dm",
+  report: process.env.PADDLE_PRICE_REPORT || "pri_01m47vk1tcvrfe2gagdajzwz43",
+  monitoring: process.env.PADDLE_PRICE_MONITORING || "pri_01m47vmey48r4qctyn3drjq2ts",
+  agency: process.env.PADDLE_PRICE_AGENCY || "pri_01m47vnw1q4tap949d754c17dm",
 };
 
 let certCache: { certs: Record<string, string>; expiresAt: number } | null = null;

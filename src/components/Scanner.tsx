@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { GradeStamp, SeverityStamp, type Grade } from "./Stamps";
 import { saveReport, listReports } from "../lib/reports";
+import { jsPDF } from "jspdf";
 
 type Issue = {
   id: string;
@@ -62,6 +63,61 @@ export function Scanner({ onUnlock, uid, onScanComplete, hasFullAccess, getIdTok
   const [step, setStep] = useState(0);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  function downloadPDF() {
+    if (!result) return;
+    const doc = new jsPDF();
+    const margin = 20;
+    let y = 20;
+
+    // Header
+    doc.setFontSize(22);
+    doc.text("Auditify Report", margin, y);
+    y += 10;
+    doc.setFontSize(11);
+    doc.text(`${result.host} — ${new Date().toLocaleDateString()}`, margin, y);
+    y += 10;
+    doc.setFontSize(16);
+    doc.text(`Score: ${result.score}/100 (${result.grade})`, margin, y);
+    y += 10;
+    doc.setFontSize(10);
+    doc.text(
+      `${result.checksRun} checks · ${result.summary.pass} pass · ${result.summary.warn} warn · ${result.summary.fail} fail`,
+      margin,
+      y
+    );
+    y += 15;
+
+    // Issues
+    doc.setFontSize(14);
+    doc.text(`Issues found: ${result.issues.length}`, margin, y);
+    y += 10;
+
+    for (const issue of result.issues) {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      const titleLines = doc.splitTextToSize(`[${issue.severity}] ${issue.title}`, 170);
+      doc.text(titleLines, margin, y);
+      y += titleLines.length * 6;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      const detailLines = doc.splitTextToSize(issue.detail, 170);
+      doc.text(detailLines, margin, y);
+      y += detailLines.length * 5 + 2;
+      doc.setFont("helvetica", "bold");
+      doc.text("Fix:", margin, y);
+      doc.setFont("helvetica", "normal");
+      const fixLines = doc.splitTextToSize(issue.fix, 170);
+      doc.text(fixLines, margin + 10, y);
+      y += fixLines.length * 5 + 8;
+    }
+
+    doc.save(`auditify-${result.host}-report.pdf`);
+  }
 
   async function runScan(e: React.FormEvent) {
     e.preventDefault();
@@ -311,13 +367,22 @@ export function Scanner({ onUnlock, uid, onScanComplete, hasFullAccess, getIdTok
 
             <div className="mt-6 border-t border-line pt-4 flex flex-wrap gap-3">
               {result.full && (
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="min-h-[44px] rounded-lg bg-ink px-5 py-2.5 text-sm font-medium text-paper hover:bg-accent"
-                >
-                  Print / Save as PDF
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={downloadPDF}
+                    className="min-h-[44px] rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white hover:bg-accent-hover"
+                  >
+                    Download PDF
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="min-h-[44px] rounded-lg border border-line-strong px-5 py-2.5 text-sm font-medium text-ink hover:border-ink"
+                  >
+                    Print
+                  </button>
+                </>
               )}
               <button
                 type="button"
