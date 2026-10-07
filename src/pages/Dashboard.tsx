@@ -48,7 +48,21 @@ function DashboardShell() {
     let cancelled = false;
     fetchEntitlements(() => user.getIdToken())
       .then((e) => {
-        if (!cancelled) setEntitlements(e);
+        if (cancelled) return;
+        setEntitlements(e);
+        // Auto-unlock pending report after payment
+        try {
+          const pendingRaw = localStorage.getItem(`auditify:pending-unlock:${user.uid}`);
+          if (pendingRaw && e.reportCredits > 0) {
+            const pending = JSON.parse(pendingRaw) as { url: string; scannedAt: string };
+            const alreadyUnlocked = countUnlocked(user.uid);
+            if (e.reportCredits > alreadyUnlocked) {
+              unlockReport(user.uid, pending.url, pending.scannedAt);
+              localStorage.removeItem(`auditify:pending-unlock:${user.uid}`);
+              reload();
+            }
+          }
+        } catch { /* ignore */ }
       })
       .catch(() => {
         if (!cancelled) setEntitlements({ report: false, reportCredits: 0, monitoring: false, agency: false });
@@ -56,7 +70,7 @@ function DashboardShell() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, reload]);
 
   const currentPlan = entitlements ? planName(entitlements) : "Free";
   const reportCredits = entitlements?.reportCredits ?? 0;
@@ -79,8 +93,17 @@ function DashboardShell() {
   const firstName = user?.displayName?.split(" ")[0];
   const paidPlans = PLANS.filter((p) => p.name !== "Free");
 
-  const buyPlan = async (planName: string) => {
-    if (!user) return; // dashboard is auth-gated; belt and suspenders
+  const buyPlan = async (planName: string, forUrl?: string, forScannedAt?: string) => {
+    if (!user) return;
+    // Remember which report this purchase is for (auto-unlock after payment)
+    if (planName === "One-time report" && forUrl && forScannedAt) {
+      try {
+        localStorage.setItem(
+          `auditify:pending-unlock:${user.uid}`,
+          JSON.stringify({ url: forUrl, scannedAt: forScannedAt })
+        );
+      } catch { /* ignore */ }
+    }
     setBuyError(null);
     setBuying(planName);
     try {
@@ -217,7 +240,16 @@ function DashboardShell() {
                           >
                             Unlock full report
                           </button>
-                        ) : null}
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={buying === "One-time report"}
+                            onClick={() => void buyPlan("One-time report", r.url, r.scannedAt)}
+                            className="mt-4 rounded-[8px] bg-ink px-4 py-2 text-[13px] font-semibold text-paper transition-colors hover:bg-accent disabled:opacity-60"
+                          >
+                            {buying === "One-time report" ? "Opening…" : "Buy to unlock — $15"}
+                          </button>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -272,9 +304,9 @@ function DashboardShell() {
                       <p className="mt-4 inline-block rounded-full bg-ink px-3 py-1 text-[12px] font-semibold text-paper">
                         Current plan
                       </p>
-                    ) : p.name === "One-time report" && reports.length === 0 ? (
+                    ) : p.name === "One-time report" ? (
                       <p className="mt-4 text-[13px] text-ink-2">
-                        Scan a site first — then unlock its full report.
+                        Buy from your scan history below — pick which report to unlock.
                       </p>
                     ) : (
                       <button
