@@ -2,6 +2,7 @@
 
 export type Entitlements = {
   report: boolean;
+  reportCredits: number;
   monitoring: boolean;
   agency: boolean;
 };
@@ -13,7 +14,7 @@ export async function fetchEntitlements(getIdToken: () => Promise<string>): Prom
   });
   if (!res.ok) {
     // Fail closed to free tier on error
-    return { report: false, monitoring: false, agency: false };
+    return { report: false, reportCredits: 0, monitoring: false, agency: false };
   }
   return (await res.json()) as Entitlements;
 }

@@ -69,6 +69,7 @@ export async function verifyFirebaseToken(idToken: string): Promise<{ uid: strin
 
 export type Entitlements = {
   report: boolean;
+  reportCredits: number;
   monitoring: boolean;
   agency: boolean;
 };
@@ -88,16 +89,17 @@ export async function getEntitlements(email: string): Promise<Entitlements> {
   const customers = await paddleGet(`/customers?email=${encodeURIComponent(email)}`);
   const customer = customers?.data?.[0];
   if (!customer?.id) {
-    return { report: false, monitoring: false, agency: false };
+    return { report: false, reportCredits: 0, monitoring: false, agency: false };
   }
 
   const customerId = customer.id;
   const transactions = await paddleGet(
     `/transactions?customer_id=${customerId}&status=completed&per_page=50`
   );
-  const hasReport = (transactions?.data ?? []).some((txn: any) =>
+  // Count $15 report purchases (each = one report credit)
+  const reportCredits = (transactions?.data ?? []).filter((txn: any) =>
     (txn.items ?? []).some((item: any) => item.price?.id === PRICE_IDS.report)
-  );
+  ).length;
 
   const subscriptions = await paddleGet(
     `/subscriptions?customer_id=${customerId}&status=active&per_page=50`
@@ -110,7 +112,7 @@ export async function getEntitlements(email: string): Promise<Entitlements> {
     (sub.items ?? []).some((item: any) => item.price?.id === PRICE_IDS.agency)
   );
 
-  return { report: hasReport, monitoring: hasMonitoring, agency: hasAgency };
+  return { report: reportCredits > 0, reportCredits, monitoring: hasMonitoring, agency: hasAgency };
 }
 
 /** Returns true if the user has any paid plan that unlocks full reports. */

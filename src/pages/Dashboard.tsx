@@ -243,6 +243,10 @@ function DashboardShell() {
                       <p className="mt-4 inline-block rounded-full bg-ink px-3 py-1 text-[12px] font-semibold text-paper">
                         Current plan
                       </p>
+                    ) : p.name === "One-time report" && reports.length === 0 ? (
+                      <p className="mt-4 text-[13px] text-ink-2">
+                        Scan a site first — then unlock its full report.
+                      </p>
                     ) : (
                       <button
                         type="button"
