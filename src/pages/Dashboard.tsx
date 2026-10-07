@@ -51,7 +51,7 @@ function DashboardShell() {
         if (!cancelled) setEntitlements(e);
       })
       .catch(() => {
-        if (!cancelled) setEntitlements({ report: false, monitoring: false, agency: false });
+        if (!cancelled) setEntitlements({ report: false, reportCredits: 0, monitoring: false, agency: false });
       });
     return () => {
       cancelled = true;
