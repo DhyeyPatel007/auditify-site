@@ -19,9 +19,11 @@ import { Phase2Modal } from "./components/Phase2Modal";
 import { AuthModal } from "./components/AuthModal";
 import { AccountModal } from "./components/AccountModal";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
+import { fetchEntitlements, type Entitlements } from "./lib/entitlements";
 
 function Shell() {
   const { user, signOutUser, redirectError } = useAuth();
+  const [entitlements, setEntitlements] = useState<Entitlements | null>(null);
   const [phase2, setPhase2] = useState<{ open: boolean; context: string }>({
     open: false,
     context: "",
@@ -31,6 +33,16 @@ function Shell() {
     mode: "signin",
   });
   const [accountOpen, setAccountOpen] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setEntitlements(null);
+      return;
+    }
+    fetchEntitlements(() => user.getIdToken())
+      .then(setEntitlements)
+      .catch(() => {});
+  }, [user]);
 
   // If a Google redirect sign-in came back with an error, open the dialog
   // so the error is visible instead of failing silently.
@@ -88,7 +100,12 @@ function Shell() {
         onAccount={() => setAccountOpen(true)}
       />
       <main>
-        <Hero onUnlock={() => void buyReport()} uid={user?.uid ?? null} />
+        <Hero
+          onUnlock={() => void buyReport()}
+          uid={user?.uid ?? null}
+          hasFullAccess={!!entitlements && (entitlements.monitoring || entitlements.agency)}
+          getIdToken={user ? () => user.getIdToken() : undefined}
+        />
         <Transformations />
         <HowItWorks />
         <SampleReport onUnlock={() => void buyReport()} />

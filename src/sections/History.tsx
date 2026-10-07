@@ -71,6 +71,14 @@ export function History({ uid }: { uid: string | null }) {
                 <p className="mt-3 text-[13px] text-ink-2">
                   {r.checksRun} checks · {when(r.scannedAt)}
                 </p>
+                <div className="mt-4 pt-3 border-t border-line">
+                  <a
+                    href="/dashboard"
+                    className="inline-block text-[13px] font-medium text-accent hover:underline"
+                  >
+                    View on dashboard →
+                  </a>
+                </div>
               </li>
             ))}
           </ul>

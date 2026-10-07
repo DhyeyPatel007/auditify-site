@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GradeStamp, SeverityStamp, type Grade } from "./Stamps";
 import { saveReport, listReports } from "../lib/reports";
-import { jsPDF } from "jspdf";
+import { downloadReportPDF } from "../lib/pdf";
 
 type Issue = {
   id: string;
@@ -37,6 +37,8 @@ type Props = {
   hasFullAccess?: boolean;
   /** Returns a Firebase ID token for authenticated full-report requests. */
   getIdToken?: () => Promise<string>;
+  /** Optional initial/selected report to view */
+  initialReport?: ScanResult | null;
 };
 
 // The input renders a decorative "https://" prefix span, so the value itself
@@ -57,66 +59,39 @@ const SCAN_STEPS = [
   "Stamping your report…",
 ];
 
-export function Scanner({ onUnlock, uid, onScanComplete, hasFullAccess, getIdToken }: Props) {
+export function Scanner({
+  onUnlock,
+  uid,
+  onScanComplete,
+  hasFullAccess,
+  getIdToken,
+  initialReport,
+}: Props) {
   const [url, setUrl] = useState("");
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [step, setStep] = useState(0);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (initialReport) {
+      setResult(initialReport);
+      setUrl(stripProtocol(initialReport.url || initialReport.host));
+      setState("done");
+    }
+  }, [initialReport]);
+
   function downloadPDF() {
     if (!result) return;
-    const doc = new jsPDF();
-    const margin = 20;
-    let y = 20;
-
-    // Header
-    doc.setFontSize(22);
-    doc.text("Auditify Report", margin, y);
-    y += 10;
-    doc.setFontSize(11);
-    doc.text(`${result.host} — ${new Date().toLocaleDateString()}`, margin, y);
-    y += 10;
-    doc.setFontSize(16);
-    doc.text(`Score: ${result.score}/100 (${result.grade})`, margin, y);
-    y += 10;
-    doc.setFontSize(10);
-    doc.text(
-      `${result.checksRun} checks · ${result.summary.pass} pass · ${result.summary.warn} warn · ${result.summary.fail} fail`,
-      margin,
-      y
-    );
-    y += 15;
-
-    // Issues
-    doc.setFontSize(14);
-    doc.text(`Issues found: ${result.issues.length}`, margin, y);
-    y += 10;
-
-    for (const issue of result.issues) {
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      const titleLines = doc.splitTextToSize(`[${issue.severity}] ${issue.title}`, 170);
-      doc.text(titleLines, margin, y);
-      y += titleLines.length * 6;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      const detailLines = doc.splitTextToSize(issue.detail, 170);
-      doc.text(detailLines, margin, y);
-      y += detailLines.length * 5 + 2;
-      doc.setFont("helvetica", "bold");
-      doc.text("Fix:", margin, y);
-      doc.setFont("helvetica", "normal");
-      const fixLines = doc.splitTextToSize(issue.fix, 170);
-      doc.text(fixLines, margin + 10, y);
-      y += fixLines.length * 5 + 8;
-    }
-
-    doc.save(`auditify-${result.host}-report.pdf`);
+    downloadReportPDF({
+      host: result.host,
+      url: result.url,
+      score: result.score,
+      grade: result.grade,
+      checksRun: result.checksRun,
+      summary: result.summary,
+      issues: result.issues,
+    });
   }
 
   async function runScan(e: React.FormEvent) {
@@ -169,14 +144,22 @@ export function Scanner({ onUnlock, uid, onScanComplete, hasFullAccess, getIdTok
       setState("done");
       if (uid) {
         const r = data as ScanResult;
-        saveReport(uid, {
-          url: r.url,
-          host: r.host,
-          score: r.score,
-          grade: r.grade,
-          checksRun: r.checksRun,
-          scannedAt: new Date().toISOString(),
-        });
+        saveReport(
+          uid,
+          {
+            url: r.url,
+            host: r.host,
+            score: r.score,
+            grade: r.grade,
+            checksRun: r.checksRun,
+            durationMs: r.durationMs,
+            summary: r.summary,
+            issues: r.issues,
+            unlocked: r.full,
+            scannedAt: new Date().toISOString(),
+          },
+          getIdToken
+        );
         onScanComplete?.();
       }
     } catch (err) {

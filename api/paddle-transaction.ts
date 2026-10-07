@@ -2,99 +2,14 @@
  * POST /api/paddle-transaction — create a Paddle transaction and return the
  * hosted checkout URL. The buyer is redirected to Paddle's full checkout
  * page (no overlay).
- *
- * AUTH: requires a Firebase ID token (Authorization: Bearer <token>).
- * The token is verified server-side with Google's public certs (no SDK —
- * plain node:crypto, zero dependencies). Email/uid come from the verified
- * token, never from client input. No token → 401. This closes the loophole:
- * checkout cannot be started anonymously or for someone else.
- *
- * PADDLE_API_URL selects the environment (sandbox vs live API). Price IDs below
- * read the PADDLE_PRICE_* env vars (same names as api/entitlements.ts uses) so
- * checkout and entitlements can never disagree; fallbacks are the LIVE ids
- * (switched 2026-10-07). PADDLE_API_KEY is the server-side
- * secret key (never exposed to the browser).
  */
 
-import { createPublicKey, verify } from "node:crypto";
-
-const PRICE_IDS: Record<string, string> = {
-  // Same env vars as api/entitlements.ts — both sides must agree.
-  // Fallbacks are the LIVE price IDs (Paddle dashboard → Catalog → Products).
-  "One-time report":
-    process.env.PADDLE_PRICE_REPORT || "pri_01m4ada569rqbepcfvyxq98zhx",
-  Monitoring:
-    process.env.PADDLE_PRICE_MONITORING || "pri_01m4adbe35cgd1m4y2pgbce9q2",
-  "Agency white-label":
-    process.env.PADDLE_PRICE_AGENCY || "pri_01m4adcrvcecg8k83aahvwkmc5",
-};
-
-const PLAN_SLUGS: Record<string, string> = {
-  "One-time report": "report",
-  Monitoring: "monitoring",
-  "Agency white-label": "agency",
-};
-
-const PADDLE_API_URL = process.env.PADDLE_API_URL || "https://sandbox-api.paddle.com";
-const FIREBASE_PROJECT_ID =
-  process.env.FIREBASE_PROJECT_ID ||
-  process.env.VITE_FIREBASE_PROJECT_ID ||
-  "auditify-74fad";
-const GOOGLE_CERTS_URL =
-  "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
-
-// Google rotates these certs; cache for under an hour.
-let certCache: { certs: Record<string, string>; expiresAt: number } | null = null;
-
-async function googleCerts(): Promise<Record<string, string>> {
-  if (certCache && Date.now() < certCache.expiresAt) return certCache.certs;
-  const res = await fetch(GOOGLE_CERTS_URL);
-  if (!res.ok) throw new Error("Could not fetch Google certs.");
-  const certs = (await res.json()) as Record<string, string>;
-  certCache = { certs, expiresAt: Date.now() + 55 * 60 * 1000 };
-  return certs;
-}
-
-function b64url(input: string): Buffer {
-  let s = input.replace(/-/g, "+").replace(/_/g, "/");
-  while (s.length % 4) s += "=";
-  return Buffer.from(s, "base64");
-}
-
-/** Verify a Firebase ID token. Returns the verified uid + email, or throws. */
-async function verifyFirebaseToken(idToken: string): Promise<{ uid: string; email: string }> {
-  const parts = idToken.split(".");
-  if (parts.length !== 3) throw new Error("Malformed token.");
-  const header = JSON.parse(b64url(parts[0]).toString("utf8")) as { kid?: string; alg?: string };
-  const payload = JSON.parse(b64url(parts[1]).toString("utf8")) as {
-    aud?: string;
-    iss?: string;
-    sub?: string;
-    email?: string;
-    exp?: number;
-    iat?: number;
-  };
-  if (header.alg !== "RS256" || !header.kid) throw new Error("Unexpected token algorithm.");
-
-  const cert = (await googleCerts())[header.kid];
-  if (!cert) throw new Error("Unknown signing key.");
-  const key = createPublicKey(cert);
-  const signed = Buffer.from(`${parts[0]}.${parts[1]}`);
-  if (!verify("RSA-SHA256", signed, key, b64url(parts[2]))) {
-    throw new Error("Bad token signature.");
-  }
-
-  const now = Math.floor(Date.now() / 1000);
-  if (payload.aud !== FIREBASE_PROJECT_ID) throw new Error("Token not for this project.");
-  if (payload.iss !== `https://securetoken.google.com/${FIREBASE_PROJECT_ID}`) {
-    throw new Error("Bad token issuer.");
-  }
-  if (typeof payload.exp !== "number" || payload.exp < now) throw new Error("Token expired.");
-  if (!payload.sub || typeof payload.email !== "string" || !payload.email) {
-    throw new Error("Token has no identity.");
-  }
-  return { uid: payload.sub, email: payload.email };
-}
+import {
+  verifyFirebaseToken,
+  PRICE_IDS,
+  PLAN_SLUGS,
+  PADDLE_API_URL,
+} from "./_lib/auth.js";
 
 type ReqLike = {
   method?: string;
@@ -134,7 +49,8 @@ export default async function handler(req: ReqLike, res: ResLike) {
   }
 
   const plan = req.body?.plan;
-  const priceId = plan ? PRICE_IDS[plan] : undefined;
+  const priceKey = plan ? (PLAN_SLUGS[plan] as keyof typeof PRICE_IDS) : undefined;
+  const priceId = priceKey ? PRICE_IDS[priceKey] : undefined;
   if (!priceId || !plan) {
     return res.status(400).json({ error: "Unknown plan." });
   }

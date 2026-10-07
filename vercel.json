@@ -33,6 +33,12 @@
       "maxDuration": 25
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/monitor",
+      "schedule": "0 0 * * 1"
+    }
+  ],
   "headers": [
     {
       "headers": [

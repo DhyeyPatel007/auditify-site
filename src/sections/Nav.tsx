@@ -17,7 +17,9 @@ type Props = {
 
 export function Nav({ user, onSignIn, onSignOut, onAccount }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const mobileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -28,8 +30,18 @@ export function Nav({ user, onSignIn, onSignOut, onAccount }: Props) {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [menuOpen]);
 
+  // Close mobile nav when clicking outside
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (!mobileRef.current?.contains(e.target as Node)) setMobileOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [mobileOpen]);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur-sm" ref={mobileRef}>
       <nav
         className="mx-auto flex h-[72px] max-w-[1120px] items-center justify-between px-6"
         aria-label="Primary"
@@ -152,8 +164,103 @@ export function Nav({ user, onSignIn, onSignOut, onAccount }: Props) {
           >
             Run free audit
           </a>
+
+          {/* Mobile hamburger menu toggle */}
+          <button
+            type="button"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileOpen}
+            className="flex h-[44px] w-[44px] items-center justify-center rounded-lg border border-line-strong bg-surface text-ink transition-colors hover:border-ink md:hidden"
+          >
+            {mobileOpen ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            )}
+          </button>
         </div>
       </nav>
+
+      {/* Mobile navigation drawer */}
+      {mobileOpen && (
+        <div className="border-b border-line bg-paper px-6 pb-6 pt-3 md:hidden">
+          <ul className="space-y-3 text-[15px] font-medium text-ink">
+            <li>
+              <a
+                href="/#features"
+                onClick={() => setMobileOpen(false)}
+                className="block py-2 text-ink-2 hover:text-ink"
+              >
+                Product
+              </a>
+            </li>
+            <li>
+              <a
+                href="/methodology"
+                onClick={() => setMobileOpen(false)}
+                className="block py-2 text-ink-2 hover:text-ink"
+              >
+                Methodology
+              </a>
+            </li>
+            <li>
+              <a
+                href="/teardowns"
+                onClick={() => setMobileOpen(false)}
+                className="block py-2 text-ink-2 hover:text-ink"
+              >
+                Teardowns
+              </a>
+            </li>
+            <li>
+              <a
+                href="/#pricing"
+                onClick={() => setMobileOpen(false)}
+                className="block py-2 text-ink-2 hover:text-ink"
+              >
+                Pricing
+              </a>
+            </li>
+            <li>
+              <a
+                href="/#faq"
+                onClick={() => setMobileOpen(false)}
+                className="block py-2 text-ink-2 hover:text-ink"
+              >
+                FAQ
+              </a>
+            </li>
+            {user && (
+              <li>
+                <a
+                  href="/dashboard"
+                  onClick={() => setMobileOpen(false)}
+                  className="block py-2 font-semibold text-accent"
+                >
+                  Dashboard →
+                </a>
+              </li>
+            )}
+          </ul>
+          <div className="mt-4 pt-3 border-t border-line">
+            <a
+              href="/#scan"
+              onClick={() => setMobileOpen(false)}
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-accent px-6 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+            >
+              Run free audit
+            </a>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

@@ -21,6 +21,7 @@ type UHeaders = import("undici").Headers;
 import dns from "node:dns/promises";
 import net from "node:net";
 import tls from "node:tls";
+import { verifyFirebaseToken, checkPaddleEntitlements } from "./_lib/auth.js";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -1000,60 +1001,11 @@ export default async function handler(req: ReqLike, res: ResLike) {
       return;
     }
     try {
-      // Full cryptographic verification of Firebase ID token
-      const { createPublicKey, verify: cryptoVerify } = await import("node:crypto");
-      const parts = idToken.split(".");
-      if (parts.length !== 3) throw new Error("Bad token");
-      const b64url = (s: string) => {
-        let x = s.replace(/-/g, "+").replace(/_/g, "/");
-        while (x.length % 4) x += "=";
-        return Buffer.from(x, "base64");
-      };
-      const header = JSON.parse(b64url(parts[0]).toString("utf8")) as { kid?: string; alg?: string };
-      const payload = JSON.parse(b64url(parts[1]).toString("utf8")) as {
-        aud?: string; iss?: string; email?: string; exp?: number;
-      };
-      if (header.alg !== "RS256" || !header.kid) throw new Error("Bad algorithm");
-      // Fetch Google certs and verify signature
-      const certRes = await fetch("https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com");
-      const certs = (await certRes.json()) as Record<string, string>;
-      const cert = certs[header.kid];
-      if (!cert) throw new Error("Unknown key");
-      const key = createPublicKey(cert);
-      const signed = Buffer.from(`${parts[0]}.${parts[1]}`);
-      if (!cryptoVerify("RSA-SHA256", signed, key, b64url(parts[2]))) {
-        throw new Error("Bad signature");
-      }
-      const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || "auditify-74fad";
-      if (payload.aud !== projectId) throw new Error("Wrong audience");
-      const email = payload.email;
-      if (!email || typeof payload.exp !== "number" || payload.exp < Date.now() / 1000) {
-        throw new Error("Invalid token");
-      }
-      // Check Paddle for any paid entitlement
-      const paddleKey = process.env.PADDLE_API_KEY;
-      const paddleUrl = process.env.PADDLE_API_URL || "https://sandbox-api.paddle.com";
-      if (!paddleKey) throw new Error("Payments not configured");
-      const custRes = await fetch(`${paddleUrl}/customers?email=${encodeURIComponent(email)}`, {
-        headers: { Authorization: `Bearer ${paddleKey}` },
-      });
-      const custData = (await custRes.json()) as { data?: Array<{ id: string }> };
-      const customerId = custData?.data?.[0]?.id;
-      if (!customerId) throw new Error("No customer");
-      const txnRes = await fetch(
-        `${paddleUrl}/transactions?customer_id=${customerId}&status=completed&per_page=10`,
-        { headers: { Authorization: `Bearer ${paddleKey}` } }
-      );
-      const txnData = (await txnRes.json()) as { data?: Array<any> };
-      const hasPaid = (txnData?.data ?? []).length > 0;
-      if (!hasPaid) {
-        // Also check subscriptions
-        const subRes = await fetch(
-          `${paddleUrl}/subscriptions?customer_id=${customerId}&status=active&per_page=10`,
-          { headers: { Authorization: `Bearer ${paddleKey}` } }
-        );
-        const subData = (await subRes.json()) as { data?: Array<any> };
-        if (!subData?.data?.length) throw new Error("No paid plan");
+      const { email } = await verifyFirebaseToken(idToken);
+      const entitlements = await checkPaddleEntitlements(email);
+      if (!entitlements.report && !entitlements.monitoring && !entitlements.agency) {
+        res.status(403).json({ error: "Full report requires a paid plan or report credit." });
+        return;
       }
       isFull = true;
     } catch {

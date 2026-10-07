@@ -89,6 +89,16 @@ export function WhiteLabel() {
                 ))}
               </ul>
             </div>
+            <div className="rounded-[10px] border border-line bg-surface p-6">
+              <h3 className="font-display text-[20px] font-semibold">Start selling audits</h3>
+              <p className="mt-1 text-[13px] text-ink-2">Turn audit reports into ongoing client retainers.</p>
+              <a
+                href="/#pricing"
+                className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-ink px-5 text-sm font-medium text-paper transition-colors hover:bg-accent"
+              >
+                Start agency plan — $69/mo
+              </a>
+            </div>
             <p className="rounded-[10px] border border-dashed border-line-strong bg-paper p-5 font-mono text-[12px] text-ink-2">
               Mock shown with a fictional agency. Your brand goes where
               “Northwind Digital” is.

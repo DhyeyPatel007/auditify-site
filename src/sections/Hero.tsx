@@ -9,7 +9,19 @@ const SAMPLE_ROWS: LedgerRowData[] = [
   { severity: "PASS", title: "HTTPS enforced", metric: "valid" },
 ];
 
-export function Hero({ onUnlock, uid }: { onUnlock: () => void; uid: string | null }) {
+export function Hero({
+  onUnlock,
+  uid,
+  hasFullAccess,
+  getIdToken,
+  onScanComplete,
+}: {
+  onUnlock: () => void;
+  uid: string | null;
+  hasFullAccess?: boolean;
+  getIdToken?: () => Promise<string>;
+  onScanComplete?: () => void;
+}) {
   return (
     <section className="border-b border-line" aria-labelledby="hero-heading">
       <div className="mx-auto grid max-w-[1120px] gap-12 px-6 py-16 md:py-24 lg:grid-cols-[1fr_420px] lg:gap-16">
@@ -35,7 +47,13 @@ export function Hero({ onUnlock, uid }: { onUnlock: () => void; uid: string | nu
                 </div>
               }
             >
-              <Scanner onUnlock={onUnlock} uid={uid} />
+              <Scanner
+                onUnlock={onUnlock}
+                uid={uid}
+                hasFullAccess={hasFullAccess}
+                getIdToken={getIdToken}
+                onScanComplete={onScanComplete}
+              />
             </Suspense>
           </div>
           <p className="mt-6">

@@ -49,7 +49,8 @@ const TIER_COPY: Record<string, Omit<Tier, "price">> = {
     blurb: "For client work",
     bestFor: "Best for: agencies selling audits under their own brand.",
     features: ["Up to 25 client sites", "Branded reports + client share links", "Lead-gen embed form for your site", "Unlimited seats"],
-    cta: "Talk to us",
+    cta: "Start agency plan",
+    popular: false,
     phase2: true,
   },
 };
@@ -70,6 +71,13 @@ export function Pricing({
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
+
+  const copyCoupon = (code: string) => {
+    navigator.clipboard?.writeText(code);
+    setCopiedCoupon(code);
+    setTimeout(() => setCopiedCoupon(null), 2500);
+  };
 
   /** Paid tiers need a signed-in buyer: no account → sign-in first (the
    * server re-verifies the token, so this gate can't be bypassed). Paid
@@ -111,19 +119,37 @@ export function Pricing({
           Honest pricing, like the reports.
         </h2>
         <div className="rounded-[10px] border border-line-strong bg-surface p-5 text-[14px] text-ink-2">
-          <p className="font-semibold text-ink">Launch discounts</p>
-          <p className="mt-2">
-            {DISCOUNT_OFFERS.map((d, i) => (
-              <span key={d.headline}>
-                {i > 0 && ", "}
-                <strong className="font-semibold text-ink">{d.headline}</strong>{" "}
-                {d.detail}
-              </span>
-            ))}{" "}
-            — one-time use each. Discount codes go live with checkout: you&rsquo;ll
-            get yours by email, and the code box at checkout applies them
-            automatically.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <p className="font-semibold text-ink">Launch discounts</p>
+              <p className="mt-1">
+                {DISCOUNT_OFFERS.map((d, i) => (
+                  <span key={d.headline}>
+                    {i > 0 && ", "}
+                    <strong className="font-semibold text-ink">{d.headline}</strong>{" "}
+                    {d.detail}
+                  </span>
+                ))}{" "}
+                — click to copy and apply at checkout:
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => copyCoupon("WELCOME10")}
+                className="rounded border border-line-strong bg-paper px-3 py-1 font-mono text-xs font-semibold text-ink transition-colors hover:border-ink hover:text-accent"
+              >
+                {copiedCoupon === "WELCOME10" ? "Copied! ✓" : "WELCOME10 (-10%)"}
+              </button>
+              <button
+                type="button"
+                onClick={() => copyCoupon("AUDIT5")}
+                className="rounded border border-line-strong bg-paper px-3 py-1 font-mono text-xs font-semibold text-ink transition-colors hover:border-ink hover:text-accent"
+              >
+                {copiedCoupon === "AUDIT5" ? "Copied! ✓" : "AUDIT5 (-5%)"}
+              </button>
+            </div>
+          </div>
         </div>
         {checkoutError && (
           <p className="mt-6 rounded-[10px] border border-accent/40 bg-accent/10 p-4 text-[14px] font-medium text-ink">

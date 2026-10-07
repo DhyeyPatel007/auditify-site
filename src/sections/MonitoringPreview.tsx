@@ -113,6 +113,19 @@ export function MonitoringPreview() {
             </div>
           </article>
         </div>
+
+        <div className="mt-10 flex flex-col items-center justify-between gap-4 rounded-[10px] border border-line bg-surface p-6 sm:flex-row">
+          <div>
+            <p className="font-display text-[18px] font-semibold text-ink">Never miss a regression.</p>
+            <p className="text-[14px] text-ink-2">Weekly re-scans of up to 3 sites with email and Slack alerts.</p>
+          </div>
+          <a
+            href="/#pricing"
+            className="inline-flex min-h-[44px] items-center rounded-lg bg-ink px-6 text-sm font-medium text-paper transition-colors hover:bg-accent"
+          >
+            Start monitoring — $12/mo
+          </a>
+        </div>
       </div>
     </section>
   );
