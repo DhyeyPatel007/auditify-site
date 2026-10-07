@@ -1000,8 +1000,8 @@ export default async function handler(req: ReqLike, res: ResLike) {
       return;
     }
     try {
-      // Verify Firebase token payload (signature verified by entitlements API;
-      // here we just need the email for the Paddle lookup)
+      // Full cryptographic verification of Firebase ID token
+      const { createPublicKey, verify: cryptoVerify } = await import("node:crypto");
       const parts = idToken.split(".");
       if (parts.length !== 3) throw new Error("Bad token");
       const b64url = (s: string) => {
@@ -1009,7 +1009,23 @@ export default async function handler(req: ReqLike, res: ResLike) {
         while (x.length % 4) x += "=";
         return Buffer.from(x, "base64");
       };
-      const payload = JSON.parse(b64url(parts[1]).toString("utf8")) as { email?: string; exp?: number };
+      const header = JSON.parse(b64url(parts[0]).toString("utf8")) as { kid?: string; alg?: string };
+      const payload = JSON.parse(b64url(parts[1]).toString("utf8")) as {
+        aud?: string; iss?: string; email?: string; exp?: number;
+      };
+      if (header.alg !== "RS256" || !header.kid) throw new Error("Bad algorithm");
+      // Fetch Google certs and verify signature
+      const certRes = await fetch("https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com");
+      const certs = (await certRes.json()) as Record<string, string>;
+      const cert = certs[header.kid];
+      if (!cert) throw new Error("Unknown key");
+      const key = createPublicKey(cert);
+      const signed = Buffer.from(`${parts[0]}.${parts[1]}`);
+      if (!cryptoVerify("RSA-SHA256", signed, key, b64url(parts[2]))) {
+        throw new Error("Bad signature");
+      }
+      const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || "auditify-74fad";
+      if (payload.aud !== projectId) throw new Error("Wrong audience");
       const email = payload.email;
       if (!email || typeof payload.exp !== "number" || payload.exp < Date.now() / 1000) {
         throw new Error("Invalid token");

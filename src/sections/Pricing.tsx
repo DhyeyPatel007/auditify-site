@@ -81,6 +81,12 @@ export function Pricing({
       onSignIn();
       return;
     }
+    // One-time report requires a scan first — send to dashboard where
+    // they'll be prompted to scan before buying.
+    if (planName === "One-time report") {
+      window.location.href = "/dashboard";
+      return;
+    }
     setBusy(planName);
     setCheckoutError(null);
     try {
