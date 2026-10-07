@@ -9,18 +9,18 @@
  * token, never from client input. No token → 401. This closes the loophole:
  * checkout cannot be started anonymously or for someone else.
  *
- * Sandbox while PADDLE_API_URL points at the sandbox API. Price IDs below
- * are the SANDBOX ids — replace with live ids when Paddle moves to production.
- * PADDLE_API_KEY is the server-side secret key (never exposed to the browser).
+ * PADDLE_API_URL selects the environment (sandbox vs live API). Price IDs below
+ * are the LIVE ids (switched 2026-10-07). PADDLE_API_KEY is the server-side
+ * secret key (never exposed to the browser).
  */
 
 import { createPublicKey, verify } from "node:crypto";
 
 const PRICE_IDS: Record<string, string> = {
-  // Sandbox price IDs (Paddle dashboard → Catalog → Products)
-  "One-time report": "pri_01m47vk1tcvrfe2gagdajzwz43",
-  Monitoring: "pri_01m47vmey48r4qctyn3drjq2ts",
-  "Agency white-label": "pri_01m47vnw1q4tap949d754c17dm",
+  // LIVE price IDs (Paddle dashboard → Catalog → Products) — set 2026-10-07
+  "One-time report": "pri_01m4ada569rqbepcfvyxq98zhx",
+  Monitoring: "pri_01m4adbe35cgd1m4y2pgbce9q2",
+  "Agency white-label": "pri_01m4adcrvcecg8k83aahvwkmc5",
 };
 
 const PLAN_SLUGS: Record<string, string> = {
