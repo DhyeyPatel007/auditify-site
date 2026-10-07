@@ -14,6 +14,7 @@ export type PastReport = {
   grade: string;
   checksRun: number;
   scannedAt: string; // ISO
+  unlocked?: boolean; // true if full report has been unlocked with a credit
 };
 
 const MAX_STORED = 20;
@@ -43,6 +44,21 @@ export function saveReport(uid: string, report: PastReport): void {
   } catch {
     // Storage unavailable (private mode etc.) — the scan itself still works.
   }
+}
+
+export function unlockReport(uid: string, url: string, scannedAt: string): void {
+  try {
+    const reports = listReports(uid).map((r) =>
+      r.url === url && r.scannedAt === scannedAt ? { ...r, unlocked: true } : r
+    );
+    localStorage.setItem(keyFor(uid), JSON.stringify(reports));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function countUnlocked(uid: string): number {
+  return listReports(uid).filter((r) => r.unlocked).length;
 }
 
 export function clearReports(uid: string): void {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { GradeStamp, SeverityStamp, type Grade } from "./Stamps";
-import { saveReport } from "../lib/reports";
+import { saveReport, listReports } from "../lib/reports";
 
 type Issue = {
   id: string;
@@ -78,8 +78,23 @@ export function Scanner({ onUnlock, uid, onScanComplete, hasFullAccess, getIdTok
     );
     try {
       const body: { url: string; full?: boolean; idToken?: string } = { url: target };
-      // Paid users get the full unlocked report
+      // Check if this specific URL has been unlocked (paid credit applied)
+      // OR if user has subscription (monitoring/agency = unlimited full reports)
+      let shouldFetchFull = false;
       if (hasFullAccess && getIdToken) {
+        // Subscription users get all full reports
+        shouldFetchFull = true;
+      } else if (uid) {
+        // One-time report: check if this URL was specifically unlocked
+        const reports = listReports(uid);
+        const normalizedTarget = target.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+        const isUnlocked = reports.some((r) => {
+          const normalizedR = r.url.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+          return normalizedR === normalizedTarget && r.unlocked;
+        });
+        if (isUnlocked && getIdToken) shouldFetchFull = true;
+      }
+      if (shouldFetchFull && getIdToken) {
         body.full = true;
         body.idToken = await getIdToken();
       }
