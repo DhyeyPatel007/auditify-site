@@ -1,9 +1,9 @@
 /**
  * GET /api/entitlements — returns the signed-in user's paid entitlements.
- * Uses shared helper (api/_entitlements.ts).
+ * Uses shared helper (api/entitlements-lib.ts).
  */
 
-import { verifyFirebaseToken, getEntitlements } from "./_entitlements";
+import { verifyFirebaseToken, getEntitlements } from "./entitlements-lib";
 
 type ReqLike = {
   method?: string;

@@ -1000,7 +1000,7 @@ export default async function handler(req: ReqLike, res: ResLike) {
       return;
     }
     try {
-      const { verifyFirebaseToken, getEntitlements, canViewFullReport } = await import("./_entitlements");
+      const { verifyFirebaseToken, getEntitlements, canViewFullReport } = await import("./entitlements-lib");
       const { email } = await verifyFirebaseToken(idToken);
       const ent = await getEntitlements(email);
       if (!canViewFullReport(ent)) {
