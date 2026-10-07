@@ -1,207 +1,118 @@
-# AUDITIFY — Full Project Handoff
+# Auditify — Complete Handoff Prompt for Opus 5.5
 
-**Written:** 2026-10-06 ~00:30 IST, by Dillo (Muse), for the next agent taking over.
-**Purpose:** Everything known about the Auditify project — what it is, what's done, what's next, where secrets live (names/locations only, NO values in this file), and how to work on it without breaking things.
-
----
-
-## 1. Project snapshot
-
-- **Product:** Auditify — a self-serve website-audit SaaS. Free scan → paid full report → monitoring/agency subscriptions.
-- **Brand:** Launched under **KRYNEX STUDIO**. Tagline (approved): "A website audit you'll actually read."
-- **Production URL:** https://auditify.krynex.in/ (decided 2026-10-05; free subdomain, Vercel-managed DNS, SSL automatic)
-- **Legacy URL:** https://auditify-site.vercel.app/ (still serves; keep as fallback)
-- **GitHub:** `DhyeyPatel007/auditify-site`, private, branch `main`
-- **Local source:** `~/workspace/auditify-app/`
-- **Figma:** "Auditify — Website", key `UtSWrcfJ3TLavsNAzYBDe0`
-- **Owner:** 19-year-old builder in India (Asia/Kolkata). Name unresolved — "Snehil" (inferred from a filename) vs "DHYEY PATEL" (Figma handle). **Never address him by either name unless he volunteers one.**
-- **Design language:** "Report card, not dashboard." Paper `#F7F3EA`, ink, vermilion `#C93A1B`. Fonts: Fraunces (display), Inter (body), IBM Plex Mono. Quiet/confident/precise personality. No AI-slop visuals, no purple/blue gradients, no glassmorphism.
-
-### Pricing (single source of truth: `src/lib/plans.ts`) — reset 2026-10-05 by owner
-| Plan | Price |
-|---|---|
-| Free scan | $0 |
-| Full report | **$15** one-time |
-| Monitoring | **$12**/month |
-| Agency white-label | **$69**/month |
-
-Discounts (advertised, NOT hard-coded — owner creates real codes in Paddle): 10% off first purchase, 5% off next purchase, one-time use each. Old `$24/$19/$109` prices are stale — audit any old doc/asset before public use.
-
-### Audience
-Small businesses + agencies + developers. **Deliberately broad** — owner is a generalist by conviction ("if they want any service i can do it"). Never push niche-only positioning.
+Copy everything below the line and paste it to Opus 5.5 as your first message.
 
 ---
 
-## 2. Tech stack & architecture
+You are taking over the **Auditify** project — a website-audit SaaS. The previous developer (Muse) built the core product but left several bugs and incomplete features. Your job: **analyze the entire codebase, find all issues, fix them in one response, with zero regressions.**
 
-- **Frontend:** React 19 + Vite 7 + Tailwind CSS 4, TypeScript. SPA with manual pathname routing in `src/main.tsx` (no react-router).
-- **Backend:** One Vercel serverless function: `api/scan.ts` (~1077 lines). Runs 35+ deterministic checks per scan (target-dependent). **Heuristic/rule-based — never trained ML.**
-- **Auth:** Firebase Auth (free Spark plan) — Google OAuth + email/password. **Google sign-in uses a custom GIS direct-token flow** (see §5).
-- **Hosting:** Vercel, project `auditify-site`, auto-deploys from GitHub `main`.
-- **Payments:** Paddle (chosen 2026-10-05; Razorpay ruled out — not a merchant of record). NOT yet integrated — checkout still to build.
+## Project Overview
 
-### Key files
-| Path | What |
-|---|---|
-| `src/main.tsx` | Manual router (pathname → page). **Every SPA route needs a Vercel rewrite** (see §8) |
-| `src/App.tsx` | Main site shell, auth modals, nav |
-| `src/auth/AuthContext.tsx` | Auth state, Google (GIS) + email/password, friendly errors |
-| `src/lib/firebase.ts` | Firebase init from `VITE_FIREBASE_*` env vars |
-| `src/lib/plans.ts` | Pricing single source of truth |
-| `src/components/Avatar.tsx` | Post-login avatar (Google photo or tonal initials) |
-| `src/pages/AuthDebug.tsx` | **Auth diagnostics page** (`/auth-debug`) — keep hidden, remove before public launch |
-| `api/scan.ts` | The scanner — 35+ checks, SSRF guards, rate limiter |
-| `vercel.json` | Rewrites, security headers (CSP/HSTS/etc.) |
-| `launch/` | Launch docs: readiness, next-steps, marketing plan, social captions, canva links, auth-paddle checklist |
-| `accuracy/` | Ground-truth + test harnesses from the 2026-10-04 accuracy audit |
+**What it is:** Self-serve website audit tool. Free scan → $15 one-time full report → $12/mo monitoring → $69/mo agency white-label.
 
-### Routes (all need Vercel rewrites — 7 exist in vercel.json)
-`/`, `/terms`, `/privacy`, `/refund`, `/methodology`, `/teardowns`, `/teardowns/:slug`, `/dashboard` (login-gated per-user screen, shipped 2026-10-06; `/auth-debug` removed)
+**Live URL:** https://auditify.krynex.in/
+**Repo:** `DhyeyPatel007/auditify-site` (private, branch `main`)
+**Local path:** `~/workspace/auditify-app/`
+**Stack:** React + Vite + TypeScript + Tailwind CSS (frontend) | Vercel Serverless Functions (API) | Firebase Auth | Paddle Billing (payments)
 
----
+**Brand:** Paper `#F7F3EA`, ink, vermilion `#C93A1B`. Typography: Fraunces (display), Inter (body), IBM Plex Mono (numbers). Design language: "report card, not dashboard." No purple/blue gradients, no glassmorphism, no generic AI visuals.
 
-## 3. Credentials & secrets map — NAMES AND LOCATIONS ONLY, NO VALUES HERE
+## Architecture
 
-| Secret | Where it lives | Notes |
-|---|---|---|
-| `VITE_FIREBASE_API_KEY` | Vercel env vars (project `auditify-site`), type **Config** | Public-by-design (ships in JS bundle); restricted by Firebase authorized domains + GCP API key HTTP-referrer restrictions |
-| `VITE_FIREBASE_AUTH_DOMAIN` | Same as above | `auditify-74fad.firebaseapp.com` |
-| `VITE_FIREBASE_PROJECT_ID` | Same as above | `auditify-74fad` |
-| `VITE_FIREBASE_APP_ID` | Same as above | From Firebase web app registration |
-| Google OAuth client ID | **Hardcoded** in `src/auth/AuthContext.tsx` (`GOOGLE_CLIENT_ID`) | `932266314669-2hqrrst210vpog5dfa4hlu82u8frqd50.apps.googleusercontent.com` — public value, auto-created by Firebase |
-| Paddle price IDs | **Don't exist yet** — owner creates products, then sends IDs | Needed to build checkout |
-| Paddle webhook secret | **Don't exist yet** — owner sends after creating products | Needed for fulfillment webhook |
-| Paddle coupon codes | Owner creates in Paddle dashboard (10% first, 5% next) | Never hard-code; site passes typed codes through to Paddle |
+### Frontend (`src/`)
+- `src/pages/` — Dashboard (login-gated), CheckoutPage, Methodology, Teardowns, legal pages
+- `src/sections/` — Pricing, Hero, Scanner landing, Features, etc.
+- `src/components/Scanner.tsx` — The audit UI. Shows score, top 3 issues free, locked teasers for the rest. Paid users get full reports.
+- `src/components/` — AuthModal, AccountModal, Phase2Modal, Stamps, etc.
+- `src/lib/plans.ts` — **Single source of truth for pricing:** Free ($0), One-time report ($15), Monitoring ($12/mo), Agency ($69/mo)
+- `src/lib/paddle.ts` — Paddle.js initialization, checkout flow
+- `src/lib/entitlements.ts` — Client-side entitlement fetching
+- `src/lib/reports.ts` — Browser localStorage for scan history (keyed by Firebase UID)
+- `src/lib/firebase.ts` — Firebase Auth config
+- `src/auth/AuthContext.tsx` — Auth provider, Google + email/password
 
-**Rules:** never commit secrets; never put values in this file, memory, or chat. Firebase web keys are public-by-design but still don't paste them anywhere unnecessary. The 2026-10-05 Firebase key scare was verified byte-by-byte as empty values — nothing leaked, nothing to rotate.
+### API Routes (`api/`)
+- `api/scan.ts` — The audit engine. ~1077 lines. Runs 35+ deterministic checks server-side. Returns `{ score, grade, issues[3], locked[], summary }` for free. Accepts `full: true` + `idToken` for paid full reports (returns all issues).
+- `api/paddle-transaction.ts` — Creates Paddle transactions. Verifies Firebase ID token server-side using Google public certs (zero-dependency RS256). Puts `firebase_uid` and `plan` in `custom_data`.
+- `api/paddle-webhook.ts` — Receives Paddle webhooks. Verifies HMAC-SHA256 signature (`Paddle-Signature` header, format `ts=<ts>;h1=<hmac>`, signed payload is `ts:rawBody` with a **colon**). Currently only logs events — does NOT write to any database.
+- `api/entitlements.ts` — Given a Firebase ID token, queries Paddle API for customer's completed transactions + active subscriptions. Returns `{ report, reportCredits, monitoring, agency }`. **Paddle is the source of truth — no database.**
 
----
+### Key Technical Decisions (DO NOT BREAK THESE)
+1. **Paddle.js rendering fix:** Paddle's checkout iframe mispositions itself (tiny, bottom-left corner) on this page. Fixed via CSS override in `src/index.css`: `iframe.paddle-frame { position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%,-50%) !important; width: min(480px,94vw) !important; ... }`. Do NOT remove this.
+2. **Webhook signature:** Paddle signs `timestamp:body` with a **colon**, not semicolon. No timestamp freshness check (Paddle replays reuse old timestamps).
+3. **Firebase token verification:** Done manually with `node:crypto` + Google certs. Do NOT add `firebase-admin` — it crashes Vercel serverless functions.
+4. **No database:** Entitlements are checked live via Paddle API. Scan history is in browser localStorage. Unlocked reports tracked in localStorage.
+5. **Checkout flow:** User must be signed in → server creates Paddle transaction with verified UID → user goes to `/?checkout=<txnId>` → CheckoutPage opens Paddle overlay.
+6. **One-time report model:** $15 = one credit = one specific report. User picks which scan to unlock from Dashboard history. Credits tracked via Paddle transaction count minus localStorage unlock count.
 
-## 4. What is DONE (2026-10-04 → 2026-10-06)
+### Environment Variables (Vercel)
+**Public (VITE_ prefix, safe in browser):**
+- `VITE_PADDLE_TOKEN` — Paddle client-side token (`test_...` sandbox, `live_...` production)
+- `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`
 
-### Scanner & accuracy (2026-10-04)
-- 12 real bugs found via ground-truth audit on 8 live sites and fixed: mixed-content dead code, `.env` false positives on SPAs, HEAD-only broken-link false positives, empty `alt=""` treated as missing, HTTPS assumed not probed, OG description substituting meta description, weak CSPs passing, HSTS/mixed-content double penalties, HTML comments breaking tag checks, TTFB wording, HTTP/2 never detected (ALPN), TLS failures → generic 500s (now useful 502s).
-- Post-fix live scores: Auditify ~96/A, GitHub 90/A, Krynex ~84–86/B, Google ~75/C, example.com 70/C, http://example.com 66/D, http://neverssl.com 61/D.
-- SSRF/edge tests pass (localhost, private IPs, metadata endpoints, bad ports, garbage input).
-- Score = weighted directional signal, not absolute truth. Limitations disclosed on `/methodology`: homepage-only, single snapshot, no JS execution, ≤10 links sampled, perf measured from scan-server location.
+**Secret (server-only, NEVER expose to client):**
+- `PADDLE_API_KEY` — Paddle server API key
+- `PADDLE_WEBHOOK_SECRET` — Webhook signing secret (from Paddle → Developer tools → Notifications → destination)
+- `PADDLE_API_URL` — `https://sandbox-api.paddle.com` or `https://api.paddle.com`
+- `PADDLE_PRICE_REPORT`, `PADDLE_PRICE_MONITORING`, `PADDLE_PRICE_AGENCY` — Price IDs (env-configurable, sandbox defaults in code)
+- `FIREBASE_PROJECT_ID` — `auditify-74fad`
 
-### Launch polish (2026-10-05)
-- Removed 9 dead footer links; footer = `© 2026 Krynex Studio · Auditify`; temp contact `dhyeypatel.work2@gmail.com` (swap to `hello@krynex.in` later — decision pending).
-- Terms corrected ("35+ checks", was "roughly a hundred").
-- **`/refund` page live** (14-day money-back on report, first-month refundable on subscriptions, cancel anytime — provisional, he can make it stricter). Required for Paddle approval.
-- Canonical/OG/sitemap/robots → `auditify.krynex.in` (commit `383bc55`).
-- Seven additions shipped (commit `152326d`): `/methodology`, anatomy-of-a-fix (real Nilkanth scan), monitoring preview, white-label agency mock (labeled fictional), comparison table, per-account scan history (localStorage), `/teardowns` (real Zerodha teardown).
-- Social: 2 Canva posts (launch announcement + benefit post), captions for X/LinkedIn/Instagram in `launch/social-captions.md`. Designs are 1080×1350 portrait. **Verify no stale $24/$19/$109 pricing in them before publishing.**
-- OG image `og-image.png` live (1200×630 branded card).
+## Current Issues (Find and Fix All)
 
-### Domain (2026-10-05)
-- `auditify.krynex.in` added by owner in Vercel (DNS Vercel-managed, SSL automatic). Verified live: 200, correct canonical, scanner works.
+### Critical Bugs
+1. **PDF download may not appear after payment.** The "Download PDF" button only shows when `result.full === true`. The entitlement check queries Paddle API — if `PADDLE_API_URL` points to live but the purchase was in sandbox (or vice versa), or if `PADDLE_PRICE_*` env vars don't match actual price IDs, the check fails silently. Verify the full chain: purchase → Paddle API → entitlements → Scanner `full: true` → PDF button.
+2. **Code duplication:** `api/scan.ts` has inlined Firebase token verification + Paddle entitlement checking (duplicated from `api/entitlements.ts`) because shared files in `api/` caused Vercel bundling failures. Find a clean way to share this logic without breaking Vercel deployment.
+3. **No error recovery:** If Paddle API is down, entitlements fail closed (user sees free tier). Add appropriate retry/caching without compromising security.
 
-### Auth (2026-10-05) — the saga
-- Firebase project created by owner; Google + Email/Password enabled; domains `auditify.krynex.in` + `auditify-site.vercel.app` authorized; 4 `VITE_FIREBASE_*` vars in Vercel as Config; redeployed.
-- Google sign-in failed for hours (`auth/internal-error`, silent redirect death). Root causes found: our CSP blocked `apis.google.com` + Firebase auth iframe; GCP API-key referrer restrictions blocked Firebase's own handler domain; redirect return-trip lost its event silently.
-- **Fix that worked:** bypass Firebase's `/__/auth/handler` entirely — **Google Identity Services direct token flow** in `src/auth/AuthContext.tsx` (`initTokenClient` → access token → `signInWithCredential`). Owner confirmed working 2026-10-05 ~21:19 IST. Email/password sign-up verified working via browser test.
-- Clean avatars shipped: Google photo in circle, or tonal initials (deterministic per user) with photo-fallback. Account dropdown shows avatar + name + email.
-- `/auth-debug` diagnostics page was the tool that cracked it — **removed 2026-10-06** (commit `316c0cd`, verified 404 live).
-- **Still needed:** publish the Google OAuth consent screen (currently Testing mode; instant, no review — Firebase uses non-sensitive scopes only).
+### Missing Features
+4. **Monitoring ($12/mo) not built:** Needs weekly re-scan cron, email/Slack alerts, issue history/trends UI. The entitlement exists (`monitoring: true`) but no features behind it.
+5. **Agency white-label ($69/mo) not built:** Needs branded reports, client share links, lead-gen embed form. Entitlement exists but no features.
+6. **No server-side history:** Scan history is localStorage-only. The Dashboard even says "History lives in this browser for now — server-side history ships with paid plans." Paid users expect cross-device history.
 
-### Paddle (2026-10-05)
-- Owner signed up. Payout settings done: India, Individual/Sole Proprietorship, Payoneer, $100 threshold. **Unverified:** Payoneer account must exist in his name at the email he entered, or payouts fail.
-- Fee: free to start, ~5% + $0.50/transaction. Verification (ID/bank) takes ~1–2 days.
+### UX Issues
+7. **Post-payment flow is confusing:** After paying for a report, the user must manually find the scan in history and click unlock. The auto-unlock (via `localStorage` pending-unlock key) may not work reliably across the Paddle redirect.
+8. **Many buttons may not work:** Audit every button in the UI. The user reports "many buttons don't work." Test each one: Pricing CTAs, Dashboard actions, Scanner buttons, Auth modal, Account modal, mobile nav, footer links.
+9. **Coupon UX:** The pricing page mentions discount codes, but there's no clear flow for how users get/apply them.
 
----
+### Infrastructure
+10. **DNS conflict:** `auditify` subdomain has both a CNAME (to Vercel) and an A record (76.76.21.21). The CNAME must be deleted. (Requires user action in Vercel DNS — flag this, don't try to fix in code.)
+11. **Test Firebase account** (`browsertest12345@example.com`) should be deleted before public launch. (Requires user action in Firebase Console.)
 
-## 5. Current state (2026-10-06 00:30 IST)
+## Your Tasks (In Order)
 
-**Working live:** marketing site, free scanner (35+ checks), Google + email/password auth, avatars, scan history, teardowns, methodology, refund/terms/privacy pages, rate limiting (in-memory, 1 scan/day/IP — preview-grade, not durable across serverless instances).
+1. **Clone and analyze:** Read every file in `src/` and `api/`. Map all data flows: scan → report → purchase → entitlement → unlock → PDF.
+2. **Reproduce issues:** For each bug above, trace the exact code path and confirm the root cause. Don't guess — read the code.
+3. **Fix in one response:** Apply all fixes. Maintain 100% backward compatibility — no existing working feature may break.
+4. **Security audit:** 
+   - Verify no API keys, secrets, or tokens are exposed in client-side code or git history
+   - Verify Firebase token verification is cryptographically sound in ALL endpoints (not just payload decoding)
+   - Verify Paddle webhook signature verification is correct
+   - Verify no SSRF vulnerabilities in the scan API
+5. **Optimization:** Remove dead code, eliminate duplication, ensure no unnecessary API calls. The entitlements check hits Paddle API on every dashboard load — add appropriate caching.
+6. **Generate sample PDF:** Create a sample Auditify report PDF showing exactly how a full paid report should look. Use realistic data (use `example.com` scan results as the basis). Brand it correctly (paper/ink/vermilion, Fraunces/Inter typography). This is the visual spec for the PDF feature.
 
-**Not yet working:** payments (see Paddle build 2026-10-06 below), monitoring/agency features (preview mocks only), analytics (none).
+## Architecture Guidance for Further Work
 
-**PageSpeed 2026-10-05:** 99/96/100/100 mobile, 100/96/100/100 desktop (perf/accessibility/best-practices/SEO). **Accessibility fix shipped 2026-10-06** — `--color-muted` → `#726c62` (4.70:1), `--color-warning` → `#946117` (4.76:1), both WCAG AA on paper (commit `316c0cd`). Re-run PageSpeed on the live URL to confirm 100s.
+**Where to go next:**
+- **Database:** The "no database" decision was pragmatic for launch but won't scale. Recommend: Firestore (already on Firebase) for entitlements, scan history, and monitoring config. Migration path: keep Paddle as source of truth for purchases, cache in Firestore, sync via webhook.
+- **Monitoring:** Vercel Cron Jobs → weekly scan trigger → compare with previous → send email via Resend/Postmark → store trend data. Needs: monitored-sites list per user, alert preferences.
+- **Agency:** White-label = custom logo/colors on reports + shareable links (signed URLs) + embeddable audit form (iframe). Needs: agency settings page, link generation, embed code generator.
+- **PDF:** Current jsPDF implementation is basic. For production-quality PDFs, consider server-side generation (Puppeteer on Vercel is heavy — evaluate alternatives) or a polished client-side template.
 
----
+## Constraints
+- **Zero regressions.** If it works now, it must still work after your changes.
+- **No API leaks.** Grep for every `process.env` — ensure secrets never reach the browser bundle.
+- **No new dependencies** unless absolutely necessary. Prefer zero-dep solutions.
+- **Keep the brand.** Paper/ink/vermilion. Report card aesthetic. No AI-slop visuals.
+- **Test everything.** Don't just fix — verify each fix works.
 
-## 6. Immediate next steps
+## Success Criteria
+- [ ] All buttons in the UI work correctly
+- [ ] Purchase → unlock → PDF download works end-to-end for $15 report
+- [ ] No way to access paid features without paying (try to break it via devtools)
+- [ ] No console errors on any page
+- [ ] Sample PDF generated showing ideal report format
+- [ ] Code is cleaner than before (less duplication, better organized)
+- [ ] No secrets in client bundle (verify with `grep` on built assets)
 
-### Owner's lane (needs his hands — automation cannot do these)
-1. **Paddle:** finish seller verification → create 3 products (report $15 one-time, monitoring $12/mo, agency $69/mo) + 2 coupons (10% first, 5% next, one-time each) in **sandbox first**, then live → send price IDs + webhook secret.
-2. **Firebase:** publish the Google OAuth consent screen (one click).
-3. Confirm Payoneer account exists in his name (else payouts fail).
-4. 5-minute real-phone mobile QA pass — **done 2026-10-06**.
-5. Confirm public contact email (temp `dhyeypatel.work2@gmail.com` → ideally `hello@krynex.in`).
-6. Accessibility call: fix contrast or launch at 96.
-
-### Next agent's lane
-1. **Paddle build — DONE 2026-10-06 (sandbox, hosted checkout):** `api/paddle-transaction.ts` verifies the Firebase ID token server-side (manual JWT check with node:crypto + Google certs — firebase-admin REMOVED 2026-10-06 after it crashed the function build) and creates the transaction with secret `PADDLE_API_KEY`, returning Paddle's hosted checkout URL; `src/lib/paddle.ts` `startCheckout()` redirects there — no Paddle.js overlay (overlay rendered broken/tiny, dropped per his call). Verified live 2026-10-06: unauthenticated POST → 401 "Sign in to continue." `api/paddle-webhook.ts` verifies `Paddle-Signature` (HMAC-SHA256, 10-min skew, fail-closed without `PADDLE_WEBHOOK_SECRET`) and routes `transaction.completed` → fulfillment via `custom_data.plan`. CSP allows cdn.paddle.com + *.paddle.com (kept). Verified live: webhook GET→405, unsigned POST→500 fail-closed. **Still needed from owner:** (a) ROTATE the sandbox API key exposed in chat, then Vercel env `PADDLE_API_KEY` = new key (Secret) + redeploy; (b) `VITE_PADDLE_TOKEN` no longer used by checkout (overlay removed) — harmless if left; (c) domain approval + default payment link in Paddle checkout settings (done 2026-10-06, fixed the "Something went wrong"); (d) sandbox test purchase → confirm FULFILL in Vercel logs. AUTH GATE (his call 2026-10-06): no checkout without sign-in — pricing buttons open the sign-in modal when logged out; `api/paddle-transaction.ts` verifies the Firebase ID token server-side (firebase-admin, 401 without/expired) and takes email+uid from the verified token only; `custom_data` carries `firebase_uid` so fulfillment credits exactly the buyer. Fulfillment currently logs only — Firestore entitlements + paid-report unlock are the next build once paid features exist.
-2. Remove/hide `/auth-debug` — **DONE 2026-10-06** (verified 404).
-
----
-
-## 7. Future plans (post-launch, from `launch/next-steps.md` + `launch/free-marketing-plan.md`)
-- Week 1–4: Paddle live → email capture on scan results (biggest funnel leak) → outreach sprint (10–15 personalized free audits/day via email/LinkedIn DM) → build in public (X daily, LinkedIn 3–4×/wk; skip Reddit — account situation).
-- Marketing engine: the free scan IS the marketing; public teardowns of real sites (private-first, permission before naming, never punch down); 14-day channel calendar in `launch/free-marketing-plan.md`.
-- Build accounts/monitoring/agency features only when customers pull for it; concierge first 50 users by hand.
-- No admin panel (recommended: skip for launch).
-
----
-
-## 8. Gotchas & lessons (read before touching anything)
-
-1. **Every SPA route needs an explicit Vercel rewrite** — `/refund` and `/auth-debug` both 404'd until added to `vercel.json`.
-2. **Vercel↔GitHub integration silently disconnected once (2026-10-04)** — if pushes stop deploying, check project Settings → Git first.
-3. **CSP vs Firebase auth:** the CSP must allow `https://apis.google.com` (script-src), `https://accounts.google.com` (script-src + connect-src), and `frame-src https://auditify-74fad.firebaseapp.com`. Tightening CSP will break Google login — test auth after any CSP change.
-4. **Google sign-in does NOT use Firebase's popup/redirect** — it uses the custom GIS flow in `AuthContext.tsx`. Don't "simplify" it back to `signInWithPopup`.
-5. **Never hard-code coupon codes** — Paddle is the source of truth (`src/lib/plans.ts` documents this).
-6. **Pricing single source of truth is `src/lib/plans.ts`** — `$15/$12/$69`. Old `$24/$19/$109` refs are stale.
-7. **The scanner is heuristic** — never call it ML/AI. Score is directional.
-8. **krynex.in DNS is Vercel-managed** — subdomains go in Vercel Domains settings; no registrar step. (Relevant later for Zoho MX records if `dillo@krynex.in` inbox is ever set up.)
-9. **Debug by running, not re-reading** — owner judges by touching the live deployment. Verify fixes on the live URL, never claim fixed before that. Screenshots > explanations.
-10. **Vercel env var type:** use **Config**, not Secret, for the Firebase vars (they ship in the public bundle anyway; Config lets you view them later). Redeploy after any env change.
-
----
-
-## 9. Working with the owner — operating rules
-
-- **Credits are precious.** He is on the free weekly limit (resets Sundays ~13:07 IST). Subagents = fast + parallel but each gets a full copy of the conversation context (expensive). Him: "subagents when I want it fast, me directly when I want it cheap." For routine work, work directly, no crews.
-- **Zero budget default.** Always state what is free and exact fee mechanics before he spends.
-- **One-line directives, numbered lists.** He judges by touching the thing. Flat corrections ("just check website bug, stop wasting my time") are ground truth — comply instantly, don't negotiate or explain.
-- **Don't guess at his expense.** His 2026-10-05 correction: "atleast stop guessing this time check our code, every mistake cant be of google side." Read the code, run one decisive test, report the result. No test-again loops.
-- **Long tasks:** work quietly, then report verified results. Don't narrate.
-- **Never address him by name** (Snehil vs DHYEY PATEL unresolved).
-- **Chat is instant; `dhyeypatel.work2@gmail.com` is the async channel.** When emailing AS Dillo, always pass `--account 5bb50778c8a6411b93d24c8a06b71ebf` to gmail +send (default account = his personal Gmail; learned the hard way).
-- **His exam:** SST1003, **today** Tue Oct 6, 11:40–13:10 IST — keep that morning quiet.
-- **Time zone:** Asia/Kolkata.
-
----
-
-## 10. Quick start for the next agent
-
-```bash
-cd ~/workspace/auditify-app
-git pull origin main          # repo: DhyeyPatel007/auditify-site (private)
-npm install                   # if needed
-npm run build                 # tsc + vite; must pass before push
-git push origin main          # Vercel auto-deploys (check Settings → Git if it doesn't)
-```
-
-- Verify live: `curl -s -o /dev/null -w "%{http_code}" https://auditify.krynex.in/`
-- Test scanner: `curl -X POST https://auditify.krynex.in/api/scan -H 'Content-Type: application/json' -d '{"url":"https://example.com"}'`
-- Full context: `~/MEMORY.md`, `~/memory/2026-10-05.md`, `launch/` docs in this repo.
-
-## 2026-10-06 — Payments working end-to-end in sandbox
-- Checkout renders centered/usable via CSS override (`iframe.paddle-frame` forced fixed/centered in index.css) — Paddle.js mispositions its iframe without this.
-- Test purchase completed: $15 paid, Paddle invoice emailed (txn_01m490f34xwbng38fq65rhwjsy).
-- Webhook verified working (200 on transaction.completed). Two bugs fixed:
-  1. Paddle signs `ts:body` with COLON, not semicolon.
-  2. No timestamp freshness check — Paddle replays reuse old timestamps.
-- NEXT: Migrate to Paddle LIVE (user doing tomorrow). Needs: seller verification, domain approval, live products/prices/keys/webhook/coupons, then swap Vercel env vars to live values + PADDLE_ENV=production.
-- Fulfillment still only logs — paid feature unlocking not built yet.
-
-## 2026-10-07 — Fulfillment built (autonomous work)
-- **Entitlements API** (`/api/entitlements`): Verifies Firebase ID token, queries Paddle API for customer's completed transactions + active subscriptions. Returns { report, monitoring, agency }. Paddle is the source of truth — no database needed.
-- **Full report unlock**: `/api/scan` accepts `full: true` + `idToken`. If entitled, returns ALL issues (not just top 3). Frontend Scanner shows "Full report" and hides locked teasers.
-- **Dashboard**: Fetches entitlements on login, displays actual current plan (not hardcoded Free).
-- **PDF export**: Full reports have "Print / Save as PDF" button with print-optimized CSS.
-- **Shared helper**: `api/_entitlements.ts` for Firebase token verification + Paddle queries.
-- **Client lib**: `src/lib/entitlements.ts` for frontend entitlement fetching.
-- REMAINING: Monitoring cron (weekly re-scans), email/Slack alerts, agency white-label UI. These need user input on email service and specifics.
+Start by reading the codebase, then present your findings (issues found + root causes) before applying fixes.
