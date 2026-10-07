@@ -196,3 +196,12 @@ git push origin main          # Vercel auto-deploys (check Settings → Git if i
   2. No timestamp freshness check — Paddle replays reuse old timestamps.
 - NEXT: Migrate to Paddle LIVE (user doing tomorrow). Needs: seller verification, domain approval, live products/prices/keys/webhook/coupons, then swap Vercel env vars to live values + PADDLE_ENV=production.
 - Fulfillment still only logs — paid feature unlocking not built yet.
+
+## 2026-10-07 — Fulfillment built (autonomous work)
+- **Entitlements API** (`/api/entitlements`): Verifies Firebase ID token, queries Paddle API for customer's completed transactions + active subscriptions. Returns { report, monitoring, agency }. Paddle is the source of truth — no database needed.
+- **Full report unlock**: `/api/scan` accepts `full: true` + `idToken`. If entitled, returns ALL issues (not just top 3). Frontend Scanner shows "Full report" and hides locked teasers.
+- **Dashboard**: Fetches entitlements on login, displays actual current plan (not hardcoded Free).
+- **PDF export**: Full reports have "Print / Save as PDF" button with print-optimized CSS.
+- **Shared helper**: `api/_entitlements.ts` for Firebase token verification + Paddle queries.
+- **Client lib**: `src/lib/entitlements.ts` for frontend entitlement fetching.
+- REMAINING: Monitoring cron (weekly re-scans), email/Slack alerts, agency white-label UI. These need user input on email service and specifics.
