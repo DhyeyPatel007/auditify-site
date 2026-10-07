@@ -19,11 +19,11 @@ const FIREBASE_PROJECT_ID =
 const GOOGLE_CERTS_URL =
   "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
 
-// Sandbox price IDs — replace with live when migrating.
+// LIVE price IDs — switched 2026-10-07.
 const PRICE_IDS = {
-  report: "pri_01m47vk1tcvrfe2gagdajzwz43",
-  monitoring: "pri_01m47vmey48r4qctyn3drjq2ts",
-  agency: "pri_01m47vnw1q4tap949d754c17dm",
+  report: "pri_01m4ada569rqbepcfvyxq98zhx",
+  monitoring: "pri_01m4adbe35cgd1m4y2pgbce9q2",
+  agency: "pri_01m4adcrvcecg8k83aahvwkmc5",
 };
 
 let certCache: { certs: Record<string, string>; expiresAt: number } | null = null;
