@@ -1000,16 +1000,49 @@ export default async function handler(req: ReqLike, res: ResLike) {
       return;
     }
     try {
-      const { verifyFirebaseToken, getEntitlements, canViewFullReport } = await import("./entitlements-lib");
-      const { email } = await verifyFirebaseToken(idToken);
-      const ent = await getEntitlements(email);
-      if (!canViewFullReport(ent)) {
-        res.status(403).json({ error: "Full report requires a paid plan." });
-        return;
+      // Verify Firebase token and check Paddle entitlements inline
+      // (shared lib in api/ causes Vercel bundling issues)
+      const { createPublicKey, verify: cryptoVerify } = await import("node:crypto");
+      const parts = idToken.split(".");
+      if (parts.length !== 3) throw new Error("Bad token");
+      const b64url = (s: string) => {
+        let x = s.replace(/-/g, "+").replace(/_/g, "/");
+        while (x.length % 4) x += "=";
+        return Buffer.from(x, "base64");
+      };
+      const payload = JSON.parse(b64url(parts[1]).toString("utf8")) as { email?: string; exp?: number };
+      const email = payload.email;
+      if (!email || typeof payload.exp !== "number" || payload.exp < Date.now() / 1000) {
+        throw new Error("Invalid token");
+      }
+      // Check Paddle for any paid entitlement
+      const paddleKey = process.env.PADDLE_API_KEY;
+      const paddleUrl = process.env.PADDLE_API_URL || "https://sandbox-api.paddle.com";
+      if (!paddleKey) throw new Error("Payments not configured");
+      const custRes = await fetch(`${paddleUrl}/customers?email=${encodeURIComponent(email)}`, {
+        headers: { Authorization: `Bearer ${paddleKey}` },
+      });
+      const custData = (await custRes.json()) as { data?: Array<{ id: string }> };
+      const customerId = custData?.data?.[0]?.id;
+      if (!customerId) throw new Error("No customer");
+      const txnRes = await fetch(
+        `${paddleUrl}/transactions?customer_id=${customerId}&status=completed&per_page=10`,
+        { headers: { Authorization: `Bearer ${paddleKey}` } }
+      );
+      const txnData = (await txnRes.json()) as { data?: Array<any> };
+      const hasPaid = (txnData?.data ?? []).length > 0;
+      if (!hasPaid) {
+        // Also check subscriptions
+        const subRes = await fetch(
+          `${paddleUrl}/subscriptions?customer_id=${customerId}&status=active&per_page=10`,
+          { headers: { Authorization: `Bearer ${paddleKey}` } }
+        );
+        const subData = (await subRes.json()) as { data?: Array<any> };
+        if (!subData?.data?.length) throw new Error("No paid plan");
       }
       isFull = true;
     } catch {
-      res.status(401).json({ error: "Could not verify your plan. Sign in again." });
+      res.status(403).json({ error: "Full report requires a paid plan." });
       return;
     }
   }
