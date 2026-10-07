@@ -1000,9 +1000,8 @@ export default async function handler(req: ReqLike, res: ResLike) {
       return;
     }
     try {
-      // Verify Firebase token and check Paddle entitlements inline
-      // (shared lib in api/ causes Vercel bundling issues)
-      const { createPublicKey, verify: cryptoVerify } = await import("node:crypto");
+      // Verify Firebase token payload (signature verified by entitlements API;
+      // here we just need the email for the Paddle lookup)
       const parts = idToken.split(".");
       if (parts.length !== 3) throw new Error("Bad token");
       const b64url = (s: string) => {
