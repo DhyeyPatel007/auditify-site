@@ -14,9 +14,13 @@ const GOOGLE_CERTS_URL =
   "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
 
 const PRICE_IDS = {
-  report: process.env.PADDLE_PRICE_REPORT || "pri_01m47vk1tcvrfe2gagdajzwz43",
-  monitoring: process.env.PADDLE_PRICE_MONITORING || "pri_01m47vmey48r4qctyn3drjq2ts",
-  agency: process.env.PADDLE_PRICE_AGENCY || "pri_01m47vnw1q4tap949d754c17dm",
+  // Same env vars as api/paddle-transaction.ts uses for checkout — both sides
+  // must agree. Fallbacks are the LIVE price IDs (Paddle dashboard → Catalog →
+  // Products). Set PADDLE_PRICE_* to sandbox IDs only if testing sandbox mode.
+  report: process.env.PADDLE_PRICE_REPORT || "pri_01m4ada569rqbepcfvyxq98zhx",
+  monitoring:
+    process.env.PADDLE_PRICE_MONITORING || "pri_01m4adbe35cgd1m4y2pgbce9q2",
+  agency: process.env.PADDLE_PRICE_AGENCY || "pri_01m4adcrvcecg8k83aahvwkmc5",
 };
 
 let certCache: { certs: Record<string, string>; expiresAt: number } | null = null;

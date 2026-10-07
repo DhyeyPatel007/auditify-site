@@ -10,17 +10,23 @@
  * checkout cannot be started anonymously or for someone else.
  *
  * PADDLE_API_URL selects the environment (sandbox vs live API). Price IDs below
- * are the LIVE ids (switched 2026-10-07). PADDLE_API_KEY is the server-side
+ * read the PADDLE_PRICE_* env vars (same names as api/entitlements.ts uses) so
+ * checkout and entitlements can never disagree; fallbacks are the LIVE ids
+ * (switched 2026-10-07). PADDLE_API_KEY is the server-side
  * secret key (never exposed to the browser).
  */
 
 import { createPublicKey, verify } from "node:crypto";
 
 const PRICE_IDS: Record<string, string> = {
-  // LIVE price IDs (Paddle dashboard → Catalog → Products) — set 2026-10-07
-  "One-time report": "pri_01m4ada569rqbepcfvyxq98zhx",
-  Monitoring: "pri_01m4adbe35cgd1m4y2pgbce9q2",
-  "Agency white-label": "pri_01m4adcrvcecg8k83aahvwkmc5",
+  // Same env vars as api/entitlements.ts — both sides must agree.
+  // Fallbacks are the LIVE price IDs (Paddle dashboard → Catalog → Products).
+  "One-time report":
+    process.env.PADDLE_PRICE_REPORT || "pri_01m4ada569rqbepcfvyxq98zhx",
+  Monitoring:
+    process.env.PADDLE_PRICE_MONITORING || "pri_01m4adbe35cgd1m4y2pgbce9q2",
+  "Agency white-label":
+    process.env.PADDLE_PRICE_AGENCY || "pri_01m4adcrvcecg8k83aahvwkmc5",
 };
 
 const PLAN_SLUGS: Record<string, string> = {
