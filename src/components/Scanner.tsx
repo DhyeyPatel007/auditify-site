@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { GradeStamp, SeverityStamp, type Grade } from "./Stamps";
-import { saveReport, listReports } from "../lib/reports";
+import { saveReport } from "../lib/reports";
 import { downloadReportPDF } from "../lib/pdf";
 
 type Issue = {
