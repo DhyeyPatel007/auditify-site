@@ -5,7 +5,6 @@ import { Footer } from "../sections/Footer";
 import { Scanner, type ScanResult } from "../components/Scanner";
 import { AuthModal } from "../components/AuthModal";
 import { AccountModal } from "../components/AccountModal";
-import { Phase2Modal } from "../components/Phase2Modal";
 import { GradeStamp, type Grade } from "../components/Stamps";
 import { PLANS, formatPrice } from "../lib/plans";
 import { startCheckout } from "../lib/paddle";
@@ -41,7 +40,6 @@ function DashboardShell() {
     mode: "signin",
   });
   const [accountOpen, setAccountOpen] = useState(false);
-  const [phase2Open, setPhase2Open] = useState(false);
   const [reports, setReports] = useState<PastReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<ScanResult | null>(null);
   const [buying, setBuying] = useState<string | null>(null);
@@ -450,7 +448,7 @@ function DashboardShell() {
 
             <section aria-label="Run a scan" className="mt-10">
               <Scanner
-                onUnlock={() => setPhase2Open(true)}
+                onUnlock={(url) => void buyPlan("One-time report", url)}
                 uid={uid}
                 onScanComplete={reload}
                 hasFullAccess={!!entitlements && (entitlements.monitoring || entitlements.agency)}
@@ -903,11 +901,6 @@ function DashboardShell() {
         )}
       </main>
       <Footer />
-      <Phase2Modal
-        open={phase2Open}
-        context="Full report"
-        onClose={() => setPhase2Open(false)}
-      />
       <AuthModal
         open={auth.open}
         mode={auth.mode}

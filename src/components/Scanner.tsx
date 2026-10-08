@@ -29,7 +29,7 @@ type ScanResult = {
 };
 
 type Props = {
-  onUnlock: () => void;
+  onUnlock: (url: string) => void;
   /** Firebase UID when signed in — scan results are saved to the account's history. */
   uid: string | null;
   /** Called after a scan completes and its report is saved (lets the dashboard refresh). */
@@ -424,7 +424,7 @@ export function Scanner({
                 <div className="mt-5 flex flex-col items-start gap-2">
                   <button
                     type="button"
-                    onClick={onUnlock}
+                    onClick={() => result && onUnlock(result.url)}
                     className="min-h-[44px] rounded-lg bg-accent px-6 py-3 text-[15px] font-medium text-white transition-colors hover:bg-accent-hover"
                   >
                     Unlock full report — $15

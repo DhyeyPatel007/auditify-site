@@ -26,6 +26,6 @@ export function hasPaidPlan(e: Entitlements): boolean {
 export function planName(e: Entitlements): string {
   if (e.agency) return "Agency white-label";
   if (e.monitoring) return "Monitoring";
-  if (e.report) return "One-time report";
+  // One-time report credits are not a "plan" — user is still on Free with credits
   return "Free";
 }
