@@ -46,7 +46,12 @@
     <meta name="theme-color" content="#F7F3EA" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Static H1 for SEO/crawlers: React replaces this on hydration -->
+      <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">
+        Auditify — A website audit you&rsquo;ll actually read
+      </h1>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

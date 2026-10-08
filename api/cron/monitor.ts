@@ -14,10 +14,11 @@ type ResLike = {
 };
 
 export default async function handler(req: ReqLike, res: ResLike) {
-  // Verify Vercel Cron authorization or secret if configured
-  const authHeader = req.headers["authorization"];
+  // SECURITY: Only Vercel Cron (with the shared secret) may trigger this.
+  // Vercel sends `Authorization: Bearer <CRON_SECRET>` for configured crons.
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  const authHeader = req.headers["authorization"];
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return res.status(401).json({ error: "Unauthorized cron trigger." });
   }
 
