@@ -940,7 +940,14 @@ async function runChecks(inp: AuditInput): Promise<Check[]> {
 // Rate limit: 1 scan/day per client IP (in-memory; noted as preview-grade)
 // ---------------------------------------------------------------------------
 
-const seen = new Map<string, string>(); // ip -> YYYY-MM-DD
+const hourlySeen = new Map<string, number>(); // ip:hour -> count
+// Prevent unbounded growth: prune entries older than 2 hours on each check
+function pruneHourlySeen() {
+  const cutoff = new Date(Date.now() - 2 * 3600 * 1000).toISOString().slice(0, 13);
+  for (const key of hourlySeen.keys()) {
+    if (key.slice(key.indexOf(":") + 1) < cutoff) hourlySeen.delete(key);
+  }
+}
 
 function clientIp(req: ReqLike): string {
   const h = req.headers;
@@ -1014,12 +1021,17 @@ export default async function handler(req: ReqLike, res: ResLike) {
     }
   }
 
-  // Rate limit before doing any work
+  // No rate limit on free scans — unlimited teasers drive conversions.
+  // The full report (all issues + PDF) requires payment, enforced below.
+  // Basic abuse protection: max 30 scans per IP per hour.
   const ip = clientIp(req);
-  const today = new Date().toISOString().slice(0, 10);
-  if (seen.get(ip) === today) {
+  pruneHourlySeen();
+  const hourKey = `${ip}:${new Date().toISOString().slice(0, 13)}`;
+  const hourCount = (hourlySeen.get(hourKey) || 0) + 1;
+  hourlySeen.set(hourKey, hourCount);
+  if (hourCount > 30) {
     res.status(429).json({
-      error: "One free scan per day — you've used today's. Come back tomorrow for another.",
+      error: "Too many scans — please wait a bit and try again.",
     });
     return;
   }
@@ -1074,8 +1086,6 @@ export default async function handler(req: ReqLike, res: ResLike) {
       fix: k.fix,
     }));
     const locked = isFull ? [] : problems.slice(3).map((k) => ({ title: k.title, metric: k.metric }));
-
-    seen.set(ip, today);
 
     res.status(200).json({
       url: doc.finalUrl,
