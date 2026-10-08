@@ -21,9 +21,12 @@ import { fetchEntitlements, planName, type Entitlements } from "../lib/entitleme
 import { downloadReportPDF } from "../lib/pdf";
 
 type MonitoredSite = {
+  id?: string;
   url: string;
   host: string;
   lastChecked?: string;
+  lastScore?: number;
+  lastGrade?: string;
   status: "healthy" | "warning" | "failing";
 };
 
@@ -49,9 +52,9 @@ function DashboardShell() {
   const [pdfError, setPdfError] = useState<string | null>(null);
 
   // Monitoring state
-  const [monitoredSites, setMonitoredSites] = useState<MonitoredSite[]>([
-    { url: "https://example.com", host: "example.com", lastChecked: "Today", status: "healthy" },
-  ]);
+  const [monitoredSites, setMonitoredSites] = useState<MonitoredSite[]>([]);
+  const [monitoredLoading, setMonitoredLoading] = useState(false);
+  const [monitoredError, setMonitoredError] = useState<string | null>(null);
   const [newSiteUrl, setNewSiteUrl] = useState("");
   const [slackWebhook, setSlackWebhook] = useState("");
   const [savedAlertMsg, setSavedAlertMsg] = useState(false);
@@ -81,6 +84,37 @@ function DashboardShell() {
   useEffect(() => {
     reload();
   }, [reload]);
+
+  // Load monitored sites from the server
+  useEffect(() => {
+    if (!user) {
+      setMonitoredSites([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setMonitoredLoading(true);
+      setMonitoredError(null);
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch("/api/monitored", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json().catch(() => null);
+        if (cancelled) return;
+        if (res.ok && Array.isArray(data?.sites)) {
+          setMonitoredSites(data.sites);
+        }
+      } catch {
+        if (!cancelled) setMonitoredError("Could not load monitored sites.");
+      } finally {
+        if (!cancelled) setMonitoredLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   // Fetch paid entitlements and process auto-unlock
   useEffect(() => {
@@ -240,21 +274,56 @@ function DashboardShell() {
     }
   };
 
-  const addMonitoredSite = (e: React.FormEvent) => {
+  const addMonitoredSite = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = newSiteUrl.trim();
-    if (!trimmed) return;
+    if (!trimmed || !user) return;
     const clean = trimmed.replace(/^https?:\/\//i, "").replace(/\/$/, "");
     if (monitoredSites.some((s) => s.host === clean)) return;
-    setMonitoredSites([
-      ...monitoredSites,
-      { url: `https://${clean}`, host: clean, lastChecked: "Scheduled", status: "healthy" },
-    ]);
-    setNewSiteUrl("");
+    setMonitoredError(null);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch("/api/monitored", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ url: trimmed }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setMonitoredError(data?.error || "Could not add site.");
+        return;
+      }
+      setMonitoredSites([
+        ...monitoredSites,
+        { id: data.id, url: data.url, host: data.host, lastChecked: "Scheduled", status: "healthy" },
+      ]);
+      setNewSiteUrl("");
+    } catch {
+      setMonitoredError("Could not add site. Try again.");
+    }
   };
 
-  const removeMonitoredSite = (host: string) => {
-    setMonitoredSites(monitoredSites.filter((s) => s.host !== host));
+  const removeMonitoredSite = async (id: string | undefined, host: string) => {
+    if (!user || !id) {
+      // Fallback for legacy entries without id
+      setMonitoredSites(monitoredSites.filter((s) => s.host !== host));
+      return;
+    }
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/monitored?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setMonitoredSites(monitoredSites.filter((s) => s.id !== id));
+      }
+    } catch {
+      // silent — user can retry
+    }
   };
 
   return (
@@ -500,6 +569,9 @@ function DashboardShell() {
               {entitlements?.monitoring || entitlements?.agency ? (
                 <div className="mt-6 rounded-[10px] border border-line bg-surface p-6">
                   <h3 className="font-display text-[18px] font-semibold">Monitored Websites</h3>
+                  {monitoredError && (
+                    <p role="alert" className="mt-3 text-[13px] text-accent">{monitoredError}</p>
+                  )}
                   <form onSubmit={addMonitoredSite} className="mt-4 flex gap-3">
                     <input
                       type="text"
@@ -517,6 +589,9 @@ function DashboardShell() {
                   </form>
 
                   <ul className="mt-5 divide-y divide-line">
+                    {monitoredLoading && monitoredSites.length === 0 && (
+                      <li className="py-3 text-[14px] text-muted">Loading monitored sites…</li>
+                    )}
                     {monitoredSites.map((site) => (
                       <li key={site.host} className="flex items-center justify-between py-3">
                         <div className="flex items-center gap-3">
@@ -528,7 +603,7 @@ function DashboardShell() {
                           <span className="font-mono text-[12px] text-ink-2">Weekly re-scan</span>
                           <button
                             type="button"
-                            onClick={() => removeMonitoredSite(site.host)}
+                            onClick={() => removeMonitoredSite(site.id, site.host)}
                             className="text-xs text-muted hover:text-accent"
                           >
                             Remove
