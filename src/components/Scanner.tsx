@@ -228,7 +228,7 @@ export function Scanner({
           </button>
         </div>
         <p id="scan-hint" className="mt-3 text-[13px] text-ink-2">
-          Free forever · about 2 minutes · no account needed
+          Free forever · about 20 seconds · no account needed
         </p>
       </form>
 

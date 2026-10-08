@@ -18,7 +18,7 @@ export function CtaBand() {
           </a>
         </div>
         <p className="mt-5 text-[13px] text-paper/70">
-          Free forever · about 2 minutes · no account needed
+          Free forever · about 20 seconds · no account needed
         </p>
       </div>
     </section>

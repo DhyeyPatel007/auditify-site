@@ -47,8 +47,11 @@ export function saveReport(
   getIdToken?: () => Promise<string>
 ): void {
   try {
+    const normUrl = (u: string) =>
+      u.replace(/^https?:\/\//i, "").replace(/\/$/, "").toLowerCase();
+    // Deduplicate by normalized URL — keep the most recent scan per URL
     const existing = listReports(uid).filter(
-      (r) => !(r.url === report.url && r.scannedAt === report.scannedAt)
+      (r) => normUrl(r.url) !== normUrl(report.url)
     );
     const next = [report, ...existing].slice(0, MAX_STORED);
     localStorage.setItem(keyFor(uid), JSON.stringify(next));

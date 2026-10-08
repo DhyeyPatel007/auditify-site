@@ -5,7 +5,7 @@ const FAQS = [
   },
   {
     q: "What does the score mean?",
-    a: "A number from 0–100 based on 35+ checks across performance, SEO, accessibility, and security, weighted by real-world impact. It's not a grade for its own sake — it's a summary of what to fix first.",
+    a: "A number from 0–100 based on 36 checks across performance, SEO, accessibility, and security, weighted by real-world impact. It's not a grade for its own sake — it's a summary of what to fix first.",
   },
   {
     q: "Do I need to install anything?",

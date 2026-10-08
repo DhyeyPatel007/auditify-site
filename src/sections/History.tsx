@@ -84,7 +84,7 @@ export function History({ uid }: { uid: string | null }) {
           </ul>
         )}
         <p className="mt-6 text-[13px] italic text-ink-2">
-          History lives in this browser for now — server-side history ships with paid plans.
+          History is synced to your account across devices.
         </p>
       </div>
     </section>

@@ -49,6 +49,7 @@ function DashboardShell() {
   const [entitlements, setEntitlements] = useState<Entitlements | null>(null);
   const [unlockedNotice, setUnlockedNotice] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState<string | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
 
   // Monitoring state
@@ -134,6 +135,22 @@ function DashboardShell() {
         const pendingRaw = localStorage.getItem(`auditify:pending-unlock:${user.uid}`);
         if (pendingRaw) {
           const pending = JSON.parse(pendingRaw) as { url: string; scannedAt?: string };
+          // First, try server-side verification (records webhook-missed purchases)
+          try {
+            const verifyToken = await user.getIdToken();
+            await fetch("/api/verify-purchase", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${verifyToken}`,
+              },
+            });
+            // Refresh entitlements after verification
+            const fresh = await fetchEntitlements(() => user.getIdToken());
+            if (!cancelled) setEntitlements(fresh);
+          } catch {
+            // Non-fatal — proceed with client unlock
+          }
           const unlocked = unlockReport(user.uid, pending.url, pending.scannedAt);
           if (unlocked) {
             localStorage.removeItem(`auditify:pending-unlock:${user.uid}`);
@@ -212,6 +229,24 @@ function DashboardShell() {
   };
 
   const handleViewReport = async (report: PastReport) => {
+    // For locked scans, show the local free version immediately (no server call needed)
+    if (!report.unlocked) {
+      setSelectedReport({
+        url: report.url,
+        host: report.host,
+        score: report.score,
+        grade: report.grade as Grade,
+        checksRun: report.checksRun,
+        durationMs: report.durationMs || 2200,
+        summary: report.summary || { pass: 0, warn: 0, fail: 0 },
+        issues: (report.issues || []).slice(0, 3),
+        locked: [{ title: "Remaining findings locked", metric: "details locked" }],
+        full: false,
+      });
+      window.scrollTo({ top: 180, behavior: "smooth" });
+      return;
+    }
+
     // SECURITY: Fetch full findings from the server (verifies payment).
     // Local `unlocked` flag alone is not trusted.
     if (!user) return;
@@ -434,24 +469,41 @@ function DashboardShell() {
                   Your scans
                 </h2>
                 {reports.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          "Clear all scan history? This cannot be undone. Paid report unlocks tied to these scans will also be removed."
-                        )
-                      ) {
-                        if (uid) {
-                          clearReports(uid, () => user.getIdToken());
-                          setReports([]);
-                        }
-                      }
-                    }}
-                    className="text-[14px] font-medium text-ink-2 underline-offset-2 hover:text-ink hover:underline"
-                  >
-                    Clear history
-                  </button>
+                  <>
+                    {!confirmClear ? (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmClear(true)}
+                        className="text-[14px] font-medium text-ink-2 underline-offset-2 hover:text-ink hover:underline"
+                      >
+                        Clear history
+                      </button>
+                    ) : (
+                      <span className="flex items-center gap-2 text-[14px]">
+                        <span className="text-ink">Sure? This can't be undone.</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (uid) {
+                              clearReports(uid, () => user!.getIdToken());
+                              setReports([]);
+                            }
+                            setConfirmClear(false);
+                          }}
+                          className="font-medium text-accent underline-offset-2 hover:underline"
+                        >
+                          Yes, clear
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmClear(false)}
+                          className="text-ink-2 underline-offset-2 hover:text-ink hover:underline"
+                        >
+                          Cancel
+                        </button>
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
               {reports.length === 0 ? (
