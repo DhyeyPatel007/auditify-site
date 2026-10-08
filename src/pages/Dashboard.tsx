@@ -303,7 +303,9 @@ function DashboardShell() {
             </a>
             <p className="eyebrow mt-8 text-ink-2">Your dashboard</p>
             <h1 className="mt-4 font-display text-[36px] font-semibold sm:text-[44px]">
-              Welcome back{firstName ? `, ${firstName}` : ""}.
+              {reports.length === 0
+                ? "Let's audit your first site."
+                : `Welcome back${firstName ? `, ${firstName}` : ""}.`}
             </h1>
 
             {pdfError && (
