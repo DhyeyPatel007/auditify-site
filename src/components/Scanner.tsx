@@ -362,7 +362,7 @@ export function Scanner({
                       {promptCopied ? "Prompt copied! ✓" : "Copy AI fix prompt"}
                     </button>
                     <a
-                      href="https://cal.com/"
+                      href="https://cal.com/auditify/15min"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex min-h-[44px] items-center rounded-lg bg-ink px-5 py-2.5 text-[14px] font-medium text-paper transition-colors hover:bg-accent"
