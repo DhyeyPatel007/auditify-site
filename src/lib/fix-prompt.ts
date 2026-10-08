@@ -16,12 +16,11 @@ export type PromptIssue = {
 
 export function buildFixPrompt(opts: {
   url: string;
-  host: string;
   score: number;
   grade: string;
   issues: PromptIssue[];
 }): string {
-  const { url, host, score, grade, issues } = opts;
+  const { url, score, grade, issues } = opts;
 
   const fails = issues.filter((i) => i.severity === "FAIL");
   const warns = issues.filter((i) => i.severity === "WARN");

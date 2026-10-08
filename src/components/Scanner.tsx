@@ -345,7 +345,6 @@ export function Scanner({
                       onClick={() => {
                         const prompt = buildFixPrompt({
                           url: result.url,
-                          host: result.host,
                           score: result.score,
                           grade: result.grade,
                           issues: result.issues,
