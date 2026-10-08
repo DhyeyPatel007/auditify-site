@@ -136,17 +136,17 @@ export function Pricing({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => copyCoupon("WELCOME10")}
+                onClick={() => copyCoupon("FIRST10")}
                 className="rounded border border-line-strong bg-paper px-3 py-1 font-mono text-xs font-semibold text-ink transition-colors hover:border-ink hover:text-accent"
               >
-                {copiedCoupon === "WELCOME10" ? "Copied! ✓" : "WELCOME10 (-10%)"}
+                {copiedCoupon === "FIRST10" ? "Copied! ✓" : "FIRST10 (-10%)"}
               </button>
               <button
                 type="button"
-                onClick={() => copyCoupon("AUDIT5")}
+                onClick={() => copyCoupon("AGAIN5")}
                 className="rounded border border-line-strong bg-paper px-3 py-1 font-mono text-xs font-semibold text-ink transition-colors hover:border-ink hover:text-accent"
               >
-                {copiedCoupon === "AUDIT5" ? "Copied! ✓" : "AUDIT5 (-5%)"}
+                {copiedCoupon === "AGAIN5" ? "Copied! ✓" : "AGAIN5 (-5%)"}
               </button>
             </div>
           </div>
