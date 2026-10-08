@@ -45,6 +45,8 @@ function DashboardShell() {
   const [buyError, setBuyError] = useState<string | null>(null);
   const [entitlements, setEntitlements] = useState<Entitlements | null>(null);
   const [unlockedNotice, setUnlockedNotice] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState<string | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   // Monitoring state
   const [monitoredSites, setMonitoredSites] = useState<MonitoredSite[]>([
@@ -133,51 +135,78 @@ function DashboardShell() {
     reload();
   };
 
-  const handleDownloadPDF = (report: PastReport) => {
-    downloadReportPDF({
-      host: report.host,
-      url: report.url,
-      score: report.score,
-      grade: report.grade,
-      checksRun: report.checksRun,
-      scannedAt: report.scannedAt,
-      summary: report.summary || { pass: 24, warn: 8, fail: 4 },
-      issues: report.issues || [
-        {
-          id: "perf-cls",
-          title: "Cumulative Layout Shift",
-          severity: "FAIL",
-          metric: "0.42",
-          detail: "Elements shifted during loading, degrading visual stability.",
-          fix: "Add explicit width and height attributes to images and embed containers.",
-        },
-        {
-          id: "sec-csp",
-          title: "Content Security Policy",
-          severity: "WARN",
-          metric: "missing",
-          detail: "No Content-Security-Policy header detected in server responses.",
-          fix: "Deploy a Content-Security-Policy header to restrict unauthorized script sources.",
-        },
-      ],
-    });
+  const handleDownloadPDF = async (report: PastReport) => {
+    // SECURITY: Never generate a PDF from local data. Fetch full findings from
+    // the server, which verifies the Firebase token + Paddle payment server-side.
+    // Flipping `unlocked` in localStorage/DevTools cannot bypass this.
+    if (!user || pdfLoading) return;
+    setPdfLoading(report.url);
+    setPdfError(null);
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: report.url, full: true, idToken }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.full) {
+        setPdfError(
+          data?.error || "Payment required — unlock this report to download the PDF."
+        );
+        return;
+      }
+      downloadReportPDF({
+        host: data.host,
+        url: data.url,
+        score: data.score,
+        grade: data.grade,
+        checksRun: data.checksRun,
+        scannedAt: report.scannedAt,
+        summary: data.summary,
+        issues: data.issues,
+      });
+    } catch {
+      setPdfError("Could not verify payment. Please try again.");
+    } finally {
+      setPdfLoading(null);
+    }
   };
 
-  const handleViewReport = (report: PastReport) => {
-    setSelectedReport({
-      url: report.url,
-      host: report.host,
-      score: report.score,
-      grade: report.grade as Grade,
-      checksRun: report.checksRun,
-      durationMs: report.durationMs || 2200,
-      summary: report.summary || { pass: 24, warn: 8, fail: 4 },
-      issues: report.issues || [],
-      locked: report.unlocked ? [] : [{ title: "Remaining findings locked", metric: "details locked" }],
-      full: report.unlocked,
-    });
-    // Scroll smoothly to scanner view
-    window.scrollTo({ top: 180, behavior: "smooth" });
+  const handleViewReport = async (report: PastReport) => {
+    // SECURITY: Fetch full findings from the server (verifies payment).
+    // Local `unlocked` flag alone is not trusted.
+    if (!user) return;
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: report.url, full: true, idToken }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.full) {
+        setPdfError(
+          data?.error || "Payment required — unlock this report to view it."
+        );
+        return;
+      }
+      setSelectedReport({
+        url: data.url,
+        host: data.host,
+        score: data.score,
+        grade: data.grade as Grade,
+        checksRun: data.checksRun,
+        durationMs: data.durationMs || 2200,
+        summary: data.summary,
+        issues: data.issues,
+        locked: [],
+        full: true,
+      });
+      window.scrollTo({ top: 180, behavior: "smooth" });
+    } catch {
+      setPdfError("Could not verify payment. Please try again.");
+    }
   };
 
   const when = (iso: string) =>
@@ -277,6 +306,22 @@ function DashboardShell() {
               Welcome back{firstName ? `, ${firstName}` : ""}.
             </h1>
 
+            {pdfError && (
+              <div
+                role="alert"
+                className="mt-6 flex items-center justify-between rounded-[10px] border border-accent/40 bg-accent/10 p-4 text-[14px] font-medium text-ink"
+              >
+                <span>{pdfError}</span>
+                <button
+                  type="button"
+                  onClick={() => setPdfError(null)}
+                  className="text-xs text-muted hover:text-ink"
+                >
+                  ✕ Dismiss
+                </button>
+              </div>
+            )}
+
             {unlockedNotice && (
               <div
                 role="status"
@@ -373,9 +418,10 @@ function DashboardShell() {
                               <button
                                 type="button"
                                 onClick={() => handleDownloadPDF(r)}
-                                className="rounded-[8px] bg-accent px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-accent-hover"
+                                disabled={pdfLoading === r.url}
+                                className="rounded-[8px] bg-accent px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-wait disabled:opacity-70"
                               >
-                                Download PDF
+                                {pdfLoading === r.url ? "Verifying…" : "Download PDF"}
                               </button>
                               <button
                                 type="button"
