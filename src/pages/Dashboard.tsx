@@ -317,9 +317,15 @@ function DashboardShell() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (uid) {
-                        clearReports(uid, () => user.getIdToken());
-                        setReports([]);
+                      if (
+                        window.confirm(
+                          "Clear all scan history? This cannot be undone. Paid report unlocks tied to these scans will also be removed."
+                        )
+                      ) {
+                        if (uid) {
+                          clearReports(uid, () => user.getIdToken());
+                          setReports([]);
+                        }
                       }
                     }}
                     className="text-[14px] font-medium text-ink-2 underline-offset-2 hover:text-ink hover:underline"

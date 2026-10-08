@@ -72,6 +72,8 @@ export function Scanner({
   const [step, setStep] = useState(0);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfDone, setPdfDone] = useState(false);
 
   useEffect(() => {
     if (initialReport) {
@@ -82,16 +84,27 @@ export function Scanner({
   }, [initialReport]);
 
   function downloadPDF() {
-    if (!result) return;
-    downloadReportPDF({
-      host: result.host,
-      url: result.url,
-      score: result.score,
-      grade: result.grade,
-      checksRun: result.checksRun,
-      summary: result.summary,
-      issues: result.issues,
-    });
+    if (!result || pdfBusy) return;
+    setPdfBusy(true);
+    setPdfDone(false);
+    // Let the UI paint the loading state before the (synchronous) PDF build
+    window.setTimeout(() => {
+      try {
+        downloadReportPDF({
+          host: result.host,
+          url: result.url,
+          score: result.score,
+          grade: result.grade,
+          checksRun: result.checksRun,
+          summary: result.summary,
+          issues: result.issues,
+        });
+        setPdfDone(true);
+        window.setTimeout(() => setPdfDone(false), 4000);
+      } finally {
+        setPdfBusy(false);
+      }
+    }, 50);
   }
 
   async function runScan(e: React.FormEvent) {
@@ -290,6 +303,52 @@ export function Scanner({
               </p>
             </div>
 
+            {result.full && (
+              <div className="mt-6 rounded-[10px] border border-accent/30 bg-accent/[0.06] p-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-display text-[18px] font-semibold text-ink">
+                      Your full report is ready
+                    </p>
+                    <p className="mt-1 text-[13px] text-ink-2">
+                      All {result.issues.length} issues with prioritized fixes — branded PDF, yours to keep.
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={downloadPDF}
+                      disabled={pdfBusy}
+                      className="inline-flex min-h-[48px] items-center gap-2 rounded-lg bg-accent px-6 py-3 text-[15px] font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-wait disabled:opacity-70"
+                    >
+                      {pdfBusy ? (
+                        <>
+                          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />
+                          Building PDF…
+                        </>
+                      ) : pdfDone ? (
+                        <>Downloaded ✓</>
+                      ) : (
+                        <>
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <path d="M8 2v8m0 0l-3-3m3 3l3-3M2.5 12.5h11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                          Download PDF
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => window.print()}
+                      className="min-h-[48px] rounded-lg border border-line-strong px-5 py-3 text-[14px] font-medium text-ink transition-colors hover:border-ink"
+                    >
+                      Print
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="mt-6">
               <p className="eyebrow mb-1 text-ink-2">
                 {result.full ? `All issues — ${result.issues.length} found` : "Top issues — free"}
@@ -348,31 +407,14 @@ export function Scanner({
               </div>
             )}
 
-            <div className="mt-6 border-t border-line pt-4 flex flex-wrap gap-3">
-              {result.full && (
-                <>
-                  <button
-                    type="button"
-                    onClick={downloadPDF}
-                    className="min-h-[44px] rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white hover:bg-accent-hover"
-                  >
-                    Download PDF
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => window.print()}
-                    className="min-h-[44px] rounded-lg border border-line-strong px-5 py-2.5 text-sm font-medium text-ink hover:border-ink"
-                  >
-                    Print
-                  </button>
-                </>
-              )}
+            <div className="mt-6 border-t border-line pt-4">
               <button
                 type="button"
                 onClick={() => {
                   setState("idle");
                   setResult(null);
                   setUrl("");
+                  setPdfDone(false);
                 }}
                 className="min-h-[44px] text-sm font-medium text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink"
               >

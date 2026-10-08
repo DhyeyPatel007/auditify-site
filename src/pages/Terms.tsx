@@ -50,9 +50,8 @@ export function TermsPage() {
         period.
       </p>
       <p>
-        Paid checkout opens at launch; until then the buttons on the pricing
-        page don&rsquo;t charge anything. These terms will be finalized when
-        paid plans go live.
+        Paid checkout is live — the buttons on the pricing page process real
+        payments through Paddle.
       </p>
 
       <h2>Discount codes</h2>
