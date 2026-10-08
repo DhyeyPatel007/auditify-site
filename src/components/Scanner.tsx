@@ -214,7 +214,7 @@ export function Scanner({
                   );
                 }}
                 disabled={state === "loading"}
-                className="h-full w-full bg-transparent pr-4 font-mono text-[15px] text-ink placeholder:text-muted focus:outline-none disabled:opacity-60"
+                className="scan-field h-full w-full bg-transparent pr-4 font-mono text-[15px] text-ink placeholder:text-muted focus:outline-none disabled:opacity-60"
                 aria-describedby="scan-hint"
               />
             </div>

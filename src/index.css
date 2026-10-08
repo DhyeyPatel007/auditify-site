@@ -48,6 +48,12 @@ body {
   border-radius: 2px;
 }
 
+/* Scan input opts out of the global focus ring (user request):
+   unlayered so it beats the unlayered :focus-visible rule above. */
+.scan-field:focus-visible {
+  outline: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
