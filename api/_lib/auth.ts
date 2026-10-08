@@ -226,6 +226,41 @@ export async function checkPaddleEntitlements(
       agency: hasAgency,
     };
 
+    // Also check Firestore for webhook-recorded purchases (catches $0 coupon
+    // orders that the Paddle API might not return as completed transactions).
+    try {
+      const { getFirestore } = await import("firebase-admin/firestore");
+      const { getApps, initializeApp, cert } = await import("firebase-admin/app");
+      if (!getApps().length && process.env.FIREBASE_SERVICE_ACCOUNT) {
+        initializeApp({
+          credential: cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
+        });
+      }
+      if (getApps().length) {
+        const snap = await getFirestore()
+          .collection("purchases")
+          .where("email", "==", normEmail)
+          .get();
+        let fsReportCredits = 0;
+        let fsMonitoring = false;
+        let fsAgency = false;
+        snap.forEach((doc) => {
+          const p = doc.data();
+          if (p.plan === "report") fsReportCredits++;
+          if (p.plan === "monitoring") fsMonitoring = true;
+          if (p.plan === "agency") fsAgency = true;
+        });
+        // Take the max — webhook records are the source of truth
+        result.reportCredits = Math.max(result.reportCredits, fsReportCredits);
+        result.report = result.reportCredits > 0;
+        result.monitoring = result.monitoring || fsMonitoring;
+        result.agency = result.agency || fsAgency;
+      }
+    } catch (e) {
+      console.warn("[entitlements] Firestore check failed:", e);
+      // Non-fatal — Paddle API results still stand
+    }
+
     entitlementsCache.set(normEmail, {
       entitlements: result,
       expiresAt: Date.now() + 2 * 60 * 1000,

@@ -12,6 +12,44 @@
  */
 
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { initializeApp, cert, getApps } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
+
+function db() {
+  if (!getApps().length) {
+    const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+    if (!raw) throw new Error("FIREBASE_SERVICE_ACCOUNT not configured.");
+    initializeApp({ credential: cert(JSON.parse(raw)) });
+  }
+  return getFirestore();
+}
+
+/** Store a verified Paddle purchase in Firestore (idempotent by transaction ID). */
+async function recordPurchase(opts: {
+  transactionId: string;
+  email: string;
+  plan: string;
+  priceId?: string;
+  amount?: string;
+  currency?: string;
+}): Promise<void> {
+  const { transactionId, email, plan } = opts;
+  if (!email || !transactionId) return;
+  await db()
+    .collection("purchases")
+    .doc(transactionId)
+    .set(
+      {
+        email: email.trim().toLowerCase(),
+        plan,
+        priceId: opts.priceId || null,
+        amount: opts.amount || null,
+        currency: opts.currency || null,
+        createdAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+}
 
 // Raw body is required for signature verification — no JSON parsing.
 export const config = { api: { bodyParser: false } };
@@ -93,10 +131,29 @@ export default async function handler(req: ReqLike, res: ResLike) {
   const plan = customData.plan ?? "unknown";
 
   if (type === "transaction.completed") {
-    // Fulfillment decision — the money pipe working end-to-end.
-    console.log(
-      `[paddle] FULFILL plan=${plan} txn=${data.id ?? "?"} customer=${data.customer_id ?? "?"}`
-    );
+    // Fulfillment: record the verified purchase in Firestore.
+    // This is the source of truth for entitlements (works for $0 coupon orders too).
+    const email =
+      (data.customer_email as string) ||
+      (customData.email as string) ||
+      "";
+    try {
+      await recordPurchase({
+        transactionId: String(data.id || ""),
+        email,
+        plan,
+        priceId: (data.items as any[])?.[0]?.price?.id,
+        amount: data.details?.totals?.total,
+        currency: data.currency_code as string,
+      });
+      console.log(
+        `[paddle] FULFILLED plan=${plan} txn=${data.id} email=${email}`
+      );
+    } catch (e) {
+      console.error("[paddle] Failed to record purchase:", e);
+      // Return 500 so Paddle retries
+      return res.status(500).json({ error: "Fulfillment failed, will retry." });
+    }
   } else if (type.startsWith("subscription.")) {
     console.log(`[paddle] ${type} plan=${plan} subscription=${data.id ?? "?"}`);
   } else {
