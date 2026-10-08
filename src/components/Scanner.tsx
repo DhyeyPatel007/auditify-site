@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { GradeStamp, SeverityStamp, type Grade } from "./Stamps";
 import { saveReport } from "../lib/reports";
 import { downloadReportPDF } from "../lib/pdf";
+import { buildFixPrompt } from "../lib/fix-prompt";
 
 type Issue = {
   id: string;
@@ -74,6 +75,7 @@ export function Scanner({
   const [error, setError] = useState<string | null>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfDone, setPdfDone] = useState(false);
+  const [promptCopied, setPromptCopied] = useState(false);
 
   useEffect(() => {
     if (initialReport) {
@@ -333,6 +335,46 @@ export function Scanner({
                       Print
                     </button>
                   </div>
+                </div>
+                {/* Fix it: AI prompt or book a call */}
+                <div className="mt-4 border-t border-accent/20 pt-4">
+                  <p className="text-[14px] font-semibold text-ink">Want these fixed?</p>
+                  <div className="mt-2 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const prompt = buildFixPrompt({
+                          url: result.url,
+                          host: result.host,
+                          score: result.score,
+                          grade: result.grade,
+                          issues: result.issues,
+                        });
+                        navigator.clipboard.writeText(prompt).then(
+                          () => {
+                            setPromptCopied(true);
+                            setTimeout(() => setPromptCopied(false), 3000);
+                          },
+                          () => setPromptCopied(false)
+                        );
+                      }}
+                      className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-ink px-5 py-2.5 text-[14px] font-medium text-ink transition-colors hover:bg-ink hover:text-paper"
+                    >
+                      {promptCopied ? "Prompt copied! ✓" : "Copy AI fix prompt"}
+                    </button>
+                    <a
+                      href="https://cal.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex min-h-[44px] items-center rounded-lg bg-ink px-5 py-2.5 text-[14px] font-medium text-paper transition-colors hover:bg-accent"
+                    >
+                      Book a fix call →
+                    </a>
+                  </div>
+                  <p className="mt-2 text-[12px] text-ink-2">
+                    Paste the prompt into ChatGPT, Claude, or your AI agent — it has your real measured data.
+                    Or book a call and we'll fix it for you.
+                  </p>
                 </div>
               </div>
             )}
