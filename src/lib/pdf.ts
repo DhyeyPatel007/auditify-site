@@ -22,6 +22,9 @@ export type PDFReportData = {
     detail: string;
     fix: string;
   }>;
+  // Agency white-label (optional)
+  agencyName?: string;
+  agencyColor?: string; // hex like "#C93A1B"
 };
 
 // Colors (RGB)
@@ -42,6 +45,20 @@ export function createAuditifyPDF(report: PDFReportData): jsPDF {
     format: "a4",
   });
 
+  // Agency white-label: use custom brand color and name if provided
+  const brandName = report.agencyName?.trim() || "Auditify";
+  const brandColor: readonly [number, number, number] = (() => {
+    const hex = report.agencyColor?.trim();
+    if (hex && /^#[0-9a-fA-F]{6}$/.test(hex)) {
+      return [
+        parseInt(hex.slice(1, 3), 16),
+        parseInt(hex.slice(3, 5), 16),
+        parseInt(hex.slice(5, 7), 16),
+      ] as const;
+    }
+    return COLOR_VERMILION;
+  })();
+
   const pageWidth = doc.internal.pageSize.getWidth(); // 210mm
   const pageHeight = doc.internal.pageSize.getHeight(); // 297mm
   const margin = 18;
@@ -53,8 +70,8 @@ export function createAuditifyPDF(report: PDFReportData): jsPDF {
     doc.setFillColor(COLOR_PAPER[0], COLOR_PAPER[1], COLOR_PAPER[2]);
     doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-    // Top paper edge border rule
-    doc.setDrawColor(COLOR_VERMILION[0], COLOR_VERMILION[1], COLOR_VERMILION[2]);
+    // Top paper edge border rule (agency brand color)
+    doc.setDrawColor(brandColor[0], brandColor[1], brandColor[2]);
     doc.setLineWidth(1.2);
     doc.line(margin, 8, pageWidth - margin, 8);
   }
@@ -64,7 +81,7 @@ export function createAuditifyPDF(report: PDFReportData): jsPDF {
     doc.setFontSize(8);
     doc.setTextColor(COLOR_INK_MUTED[0], COLOR_INK_MUTED[1], COLOR_INK_MUTED[2]);
     doc.text(
-      `Auditify · Official Web Audit Report · ${report.host}`,
+      `${brandName} · Official Web Audit Report · ${report.host}`,
       margin,
       pageHeight - 8
     );
@@ -83,7 +100,7 @@ export function createAuditifyPDF(report: PDFReportData): jsPDF {
   // Header Eyebrow
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
-  doc.setTextColor(COLOR_VERMILION[0], COLOR_VERMILION[1], COLOR_VERMILION[2]);
+  doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
   doc.text("AUDITIFY CONFIDENTIAL REPORT", margin, y);
   y += 6;
 
@@ -133,13 +150,13 @@ export function createAuditifyPDF(report: PDFReportData): jsPDF {
   const stampX = margin + 65;
   const stampY = y + 8;
   doc.setFillColor(COLOR_PAPER[0], COLOR_PAPER[1], COLOR_PAPER[2]);
-  doc.setDrawColor(COLOR_VERMILION[0], COLOR_VERMILION[1], COLOR_VERMILION[2]);
+  doc.setDrawColor(brandColor[0], brandColor[1], brandColor[2]);
   doc.setLineWidth(1);
   doc.roundedRect(stampX, stampY, 26, 20, 2, 2, "FD");
 
   doc.setFont("times", "bold");
   doc.setFontSize(16);
-  doc.setTextColor(COLOR_VERMILION[0], COLOR_VERMILION[1], COLOR_VERMILION[2]);
+  doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
   doc.text(report.grade, stampX + 13, stampY + 14, { align: "center" });
 
   doc.setFont("helvetica", "bold");
@@ -161,7 +178,7 @@ export function createAuditifyPDF(report: PDFReportData): jsPDF {
   doc.setTextColor(COLOR_WARN[0], COLOR_WARN[1], COLOR_WARN[2]);
   doc.text(`[!] ${report.summary.warn} WARN`, rightX, y + 25);
 
-  doc.setTextColor(COLOR_VERMILION[0], COLOR_VERMILION[1], COLOR_VERMILION[2]);
+  doc.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
   doc.text(`[✗] ${report.summary.fail} FAIL`, rightX, y + 32);
 
   y += cardHeight + 10;

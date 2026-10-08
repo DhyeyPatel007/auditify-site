@@ -199,6 +199,10 @@ function DashboardShell() {
         scannedAt: report.scannedAt,
         summary: data.summary,
         issues: data.issues,
+        // Agency white-label: use custom branding if agency plan is active
+        ...(entitlements?.agency
+          ? { agencyName, agencyColor }
+          : {}),
       });
     } catch {
       setPdfError("Could not verify payment. Please try again.");
