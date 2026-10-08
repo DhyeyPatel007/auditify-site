@@ -184,7 +184,7 @@ export function Scanner({
         </label>
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="flex-1">
-            <div className="flex h-[52px] items-center rounded-lg border border-line-strong bg-surface-raised transition-colors focus-within:border-ink">
+            <div className="flex h-[52px] items-center rounded-lg border border-line-strong bg-surface-raised">
               <span
                 aria-hidden="true"
                 className="pointer-events-none select-none pl-4 font-mono text-[15px] text-ink-2"
