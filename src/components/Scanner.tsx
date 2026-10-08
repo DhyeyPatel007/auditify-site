@@ -122,23 +122,11 @@ export function Scanner({
     );
     try {
       const body: { url: string; full?: boolean; idToken?: string } = { url: target };
-      // Check if this specific URL has been unlocked (paid credit applied)
-      // OR if user has subscription (monitoring/agency = unlimited full reports)
-      let shouldFetchFull = false;
+      // Subscription users (monitoring/agency) get full reports on every scan.
+      // One-time purchases use "View full" / "Download PDF" buttons (server-verified).
+      // The scan box ALWAYS does a free scan — never auto-request full based on
+      // client-side flags, which would show a confusing payment error on re-scan.
       if (hasFullAccess && getIdToken) {
-        // Subscription users get all full reports
-        shouldFetchFull = true;
-      } else if (uid) {
-        // One-time report: check if this URL was specifically unlocked
-        const reports = listReports(uid);
-        const normalizedTarget = target.replace(/^https?:\/\//i, "").replace(/\/$/, "");
-        const isUnlocked = reports.some((r) => {
-          const normalizedR = r.url.replace(/^https?:\/\//i, "").replace(/\/$/, "");
-          return normalizedR === normalizedTarget && r.unlocked;
-        });
-        if (isUnlocked && getIdToken) shouldFetchFull = true;
-      }
-      if (shouldFetchFull && getIdToken) {
         body.full = true;
         body.idToken = await getIdToken();
       }
