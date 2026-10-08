@@ -71,7 +71,7 @@ export default async function handler(req: ReqLike, res: ResLike) {
         enable_checkout: true,
         // Verified uid travels with the transaction so fulfillment can
         // credit exactly the signed-in buyer — not whoever typed an email.
-        custom_data: { plan: PLAN_SLUGS[plan], firebase_uid: uid },
+        custom_data: { plan: PLAN_SLUGS[plan], firebase_uid: uid, email },
       }),
     });
   } catch {

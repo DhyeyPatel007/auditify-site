@@ -133,10 +133,35 @@ export default async function handler(req: ReqLike, res: ResLike) {
   if (type === "transaction.completed") {
     // Fulfillment: record the verified purchase in Firestore.
     // This is the source of truth for entitlements (works for $0 coupon orders too).
-    const email =
+    let email =
       (data.customer_email as string) ||
       (customData.email as string) ||
       "";
+
+    // Fallback: fetch customer email via Paddle API using customer_id
+    if (!email && data.customer_id) {
+      try {
+        const apiKey = process.env.PADDLE_API_KEY;
+        const apiUrl = process.env.PADDLE_API_URL || "https://sandbox-api.paddle.com";
+        if (apiKey) {
+          const res = await fetch(`${apiUrl}/customers/${data.customer_id}`, {
+            headers: { Authorization: `Bearer ${apiKey}` },
+          });
+          if (res.ok) {
+            const customer = (await res.json()) as { data?: { email?: string } };
+            email = customer.data?.email || "";
+          }
+        }
+      } catch (e) {
+        console.warn("[paddle] Could not fetch customer email:", e);
+      }
+    }
+
+    if (!email) {
+      console.error(`[paddle] No email for txn=${data.id} — cannot fulfill.`);
+      return res.status(200).json({ received: true, fulfilled: false });
+    }
+
     try {
       await recordPurchase({
         transactionId: String(data.id || ""),
