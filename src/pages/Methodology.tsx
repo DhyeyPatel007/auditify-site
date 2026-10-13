@@ -8,7 +8,6 @@ const GROUPS: { title: string; blurb: string; checks: Check[] }[] = [
     title: "Security",
     blurb: "Can visitors — and attackers — trust this page?",
     checks: [
-      { name: "HTTPS", how: "We require the page to load over TLS; plain HTTP fails outright." },
       { name: "TLS version", how: "We read the negotiated protocol during the handshake. 1.0/1.1 fail; 1.2/1.3 pass." },
       { name: "HTTPS enforced", how: "We request the HTTP version and require a redirect to HTTPS — serving content over HTTP fails." },
       { name: "HSTS", how: "We parse the Strict-Transport-Security header. Missing fails; a max-age under a year warns; preloaded passes with honors." },
