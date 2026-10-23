@@ -32,14 +32,14 @@ const ROWS: { label: string; auditify: string; lighthouse: string; guru: string;
   },
   {
     label: "Price",
-    auditify: "$15 one-time",
+    auditify: "Free",
     lighthouse: "Free",
     guru: "$500+",
     win: 1,
   },
   {
     label: "Ongoing monitoring",
-    auditify: "$12/mo, alerts included",
+    auditify: "Free, alerts included",
     lighthouse: "DIY via CI",
     guru: "A retainer",
     win: 0,

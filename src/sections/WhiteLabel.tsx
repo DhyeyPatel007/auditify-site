@@ -6,7 +6,7 @@ export function WhiteLabel() {
   return (
     <section id="white-label" className="border-b border-line" aria-labelledby="whitelabel-heading">
       <div className="mx-auto max-w-[1120px] px-6 py-16 md:py-24">
-        <p className="eyebrow text-ink-2">Agency white-label · $69/mo</p>
+        <p className="eyebrow text-ink-2">Agency white-label · free</p>
         <h2
           id="whitelabel-heading"
           className="mt-4 max-w-[720px] font-display text-[32px] font-semibold leading-[1.1] sm:text-[40px]"
@@ -96,7 +96,7 @@ export function WhiteLabel() {
                 href="/#pricing"
                 className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-ink px-5 text-sm font-medium text-paper transition-colors hover:bg-accent"
               >
-                Start agency plan — $69/mo
+                Start white-label — free
               </a>
             </div>
             <p className="rounded-[10px] border border-dashed border-line-strong bg-paper p-5 font-mono text-[12px] text-ink-2">

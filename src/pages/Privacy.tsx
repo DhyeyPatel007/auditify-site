@@ -18,7 +18,7 @@ export function PrivacyPage() {
           <strong>Your scan history</strong> — if you're signed in, the sites
           you've scanned are listed in your account so you can revisit past
           reports. This history is currently stored on your device; it moves
-          to your account when the paid backend ships.
+          with your account.
         </li>
       </ul>
       <p>That's it. Nothing else.</p>

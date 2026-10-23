@@ -3,10 +3,10 @@
  * POST /api/monitored — add a site { url }
  * DELETE /api/monitored?id=... — remove a site
  *
- * Requires Firebase ID token. Monitoring plan ($12/mo) required for POST.
+ * Requires Firebase ID token. Monitoring is free for signed-in users.
  */
 
-import { verifyFirebaseToken, checkPaddleEntitlements } from "./_lib/auth.js";
+import { verifyFirebaseToken } from "./_lib/auth.js";
 import {
   listUserMonitored,
   addMonitored,
@@ -67,16 +67,8 @@ export default async function handler(req: ReqLike, res: ResLike) {
   }
 
   if (req.method === "POST") {
-    // Monitoring plan required
-    try {
-      const ent = await checkPaddleEntitlements(email);
-      if (!ent.monitoring && !ent.agency) {
-        return res.status(403).json({ error: "Monitoring plan required." });
-      }
-    } catch {
-      return res.status(403).json({ error: "Monitoring plan required." });
-    }
-
+    // Monitoring is free for every signed-in user (payments removed
+    // 2026-10-23). The token check above is the only gate.
     const body = (req.body || {}) as { url?: unknown };
     if (typeof body.url !== "string") {
       return res.status(400).json({ error: "Provide a URL to monitor." });

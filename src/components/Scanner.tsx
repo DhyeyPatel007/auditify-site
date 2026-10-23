@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { GradeStamp, SeverityStamp, type Grade } from "./Stamps";
 import { saveReport } from "../lib/reports";
-import { downloadReportPDF } from "../lib/pdf";
+import { PrintReportMount, type ReportData } from "./ReportPrint";
 import { buildFixPrompt } from "../lib/fix-prompt";
 
 type Issue = {
@@ -24,6 +24,12 @@ type ScanResult = {
   durationMs: number;
   summary: { pass: number; warn: number; fail: number };
   issues: Issue[];
+  allChecks?: Array<{
+    id: string;
+    title: string;
+    severity: "PASS" | "WARN" | "FAIL";
+    metric: string;
+  }>;
   locked: LockedTeaser[];
   full?: boolean;
 };
@@ -34,7 +40,7 @@ type Props = {
   uid: string | null;
   /** Called after a scan completes and its report is saved (lets the dashboard refresh). */
   onScanComplete?: () => void;
-  /** When true, the user has a paid plan — fetch the full unlocked report. */
+  /** When true, the user is signed in — fetch the full report (free with login). */
   hasFullAccess?: boolean;
   /** Returns a Firebase ID token for authenticated full-report requests. */
   getIdToken?: () => Promise<string>;
@@ -73,8 +79,8 @@ export function Scanner({
   const [step, setStep] = useState(0);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfDone, setPdfDone] = useState(false);
+  const [printData, setPrintData] = useState<ReportData | null>(null);
   const [promptCopied, setPromptCopied] = useState(false);
 
   useEffect(() => {
@@ -85,28 +91,75 @@ export function Scanner({
     }
   }, [initialReport]);
 
-  function downloadPDF() {
-    if (!result || pdfBusy) return;
-    setPdfBusy(true);
+  /** "Download PDF" = the printable HTML report sheet (DopaDiary pattern):
+   * mounting it opens the browser print dialog, where the user saves the
+   * PDF. Real typography instead of the old code-drawn jsPDF boxes. */
+  function printReport() {
+    if (!result) return;
     setPdfDone(false);
-    // Let the UI paint the loading state before the (synchronous) PDF build
-    window.setTimeout(() => {
-      try {
-        downloadReportPDF({
-          host: result.host,
-          url: result.url,
-          score: result.score,
-          grade: result.grade,
-          checksRun: result.checksRun,
-          summary: result.summary,
-          issues: result.issues,
-        });
-        setPdfDone(true);
-        window.setTimeout(() => setPdfDone(false), 4000);
-      } finally {
-        setPdfBusy(false);
+    setPrintData({
+      host: result.host,
+      url: result.url,
+      score: result.score,
+      grade: result.grade,
+      checksRun: result.checksRun,
+      scannedAt: new Date().toISOString(),
+      summary: result.summary,
+      issues: result.issues,
+      allChecks: result.allChecks,
+    });
+  }
+
+  const handlePrintDone = useCallback(() => {
+    setPrintData(null);
+    setPdfDone(true);
+    window.setTimeout(() => setPdfDone(false), 4000);
+  }, []);
+
+  const [fullBusy, setFullBusy] = useState(false);
+
+  /** Fetch the full version of the current preview (signed-in users only —
+   * the button falls back to the sign-in flow when there's no session). */
+  async function loadFull() {
+    if (!result || !getIdToken || fullBusy) return;
+    setFullBusy(true);
+    try {
+      const idToken = await getIdToken();
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: result.url, full: true, idToken }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.full) {
+        throw new Error((data && data.error) || "Could not load the full report.");
       }
-    }, 50);
+      const r = data as ScanResult;
+      setResult(r);
+      if (uid) {
+        saveReport(
+          uid,
+          {
+            url: r.url,
+            host: r.host,
+            score: r.score,
+            grade: r.grade,
+            checksRun: r.checksRun,
+            durationMs: r.durationMs,
+            summary: r.summary,
+            issues: r.issues,
+            unlocked: true,
+            scannedAt: new Date().toISOString(),
+          },
+          getIdToken
+        );
+        onScanComplete?.();
+      }
+    } catch {
+      // Leave the preview on screen; the button can be retried.
+    } finally {
+      setFullBusy(false);
+    }
   }
 
   async function runScan(e: React.FormEvent) {
@@ -124,10 +177,10 @@ export function Scanner({
     );
     try {
       const body: { url: string; full?: boolean; idToken?: string } = { url: target };
-      // Subscription users (monitoring/agency) get full reports on every scan.
-      // One-time purchases use "View full" / "Download PDF" buttons (server-verified).
-      // The scan box ALWAYS does a free scan — never auto-request full based on
-      // client-side flags, which would show a confusing payment error on re-scan.
+      // Signed-in users get the full report on every scan — full reports are
+      // free with login (payments removed 2026-10-23); the server verifies
+      // the Firebase token. Signed-out scans return the free preview
+      // (top 3 issues + teasers).
       if (hasFullAccess && getIdToken) {
         body.full = true;
         body.idToken = await getIdToken();
@@ -307,16 +360,10 @@ export function Scanner({
                   <div className="flex shrink-0 items-center gap-3">
                     <button
                       type="button"
-                      onClick={downloadPDF}
-                      disabled={pdfBusy}
-                      className="inline-flex min-h-[48px] items-center gap-2 rounded-lg bg-accent px-6 py-3 text-[15px] font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-wait disabled:opacity-70"
+                      onClick={printReport}
+                      className="inline-flex min-h-[48px] items-center gap-2 rounded-lg bg-accent px-6 py-3 text-[15px] font-medium text-white transition-colors hover:bg-accent-hover"
                     >
-                      {pdfBusy ? (
-                        <>
-                          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />
-                          Building PDF…
-                        </>
-                      ) : pdfDone ? (
+                      {pdfDone ? (
                         <>Downloaded ✓</>
                       ) : (
                         <>
@@ -326,13 +373,6 @@ export function Scanner({
                           Download PDF
                         </>
                       )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => window.print()}
-                      className="min-h-[48px] rounded-lg border border-line-strong px-5 py-3 text-[14px] font-medium text-ink transition-colors hover:border-ink"
-                    >
-                      Print
                     </button>
                   </div>
                 </div>
@@ -406,7 +446,7 @@ export function Scanner({
 
             {result.locked.length > 0 && (
               <div className="mt-6">
-                <p className="eyebrow mb-1 text-ink-2">Full findings — locked</p>
+                <p className="eyebrow mb-1 text-ink-2">Full findings — free with an account</p>
                 {result.locked.slice(0, 4).map((t, i) => (
                   <div
                     key={i}
@@ -424,13 +464,22 @@ export function Scanner({
                 <div className="mt-5 flex flex-col items-start gap-2">
                   <button
                     type="button"
-                    onClick={() => result && onUnlock(result.url)}
-                    className="min-h-[44px] rounded-lg bg-accent px-6 py-3 text-[15px] font-medium text-white transition-colors hover:bg-accent-hover"
+                    disabled={fullBusy}
+                    onClick={() => {
+                      if (!result) return;
+                      if (getIdToken) void loadFull();
+                      else onUnlock(result.url);
+                    }}
+                    className="min-h-[44px] rounded-lg bg-accent px-6 py-3 text-[15px] font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-60"
                   >
-                    Unlock full report — $15
+                    {fullBusy
+                      ? "Loading full report…"
+                      : getIdToken
+                        ? "View full report — free"
+                        : "Sign in for the full report — free"}
                   </button>
                   <p className="text-[13px] text-ink-2">
-                    One-time · full PDF · all checks
+                    Free with a free account · full PDF · all 36 checks
                   </p>
                 </div>
               </div>
@@ -453,6 +502,7 @@ export function Scanner({
           </div>
         </article>
       )}
+      {printData && <PrintReportMount report={printData} onDone={handlePrintDone} />}
     </div>
   );
 }

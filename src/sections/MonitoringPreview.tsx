@@ -1,5 +1,5 @@
 /**
- * Monitoring preview — what the $12/mo plan looks like: a score-over-time
+ * Monitoring preview — what free monitoring looks like: a score-over-time
  * chart and a sample alert email. Chart data is a labeled sample; the
  * email is a mock of the real alert format.
  */
@@ -30,7 +30,7 @@ export function MonitoringPreview() {
   return (
     <section id="monitoring" className="border-b border-line" aria-labelledby="monitoring-heading">
       <div className="mx-auto max-w-[1120px] px-6 py-16 md:py-24">
-        <p className="eyebrow text-ink-2">Monitoring · $12/mo</p>
+        <p className="eyebrow text-ink-2">Monitoring · free</p>
         <h2
           id="monitoring-heading"
           className="mt-4 max-w-[720px] font-display text-[32px] font-semibold leading-[1.1] sm:text-[40px]"
@@ -117,13 +117,13 @@ export function MonitoringPreview() {
         <div className="mt-10 flex flex-col items-center justify-between gap-4 rounded-[10px] border border-line bg-surface p-6 sm:flex-row">
           <div>
             <p className="font-display text-[18px] font-semibold text-ink">Never miss a regression.</p>
-            <p className="text-[14px] text-ink-2">Weekly re-scans of up to 3 sites with email and Slack alerts.</p>
+            <p className="text-[14px] text-ink-2">Weekly re-scans of up to 10 sites with email alerts.</p>
           </div>
           <a
             href="/#pricing"
             className="inline-flex min-h-[44px] items-center rounded-lg bg-ink px-6 text-sm font-medium text-paper transition-colors hover:bg-accent"
           >
-            Start monitoring — $12/mo
+            Start monitoring — free
           </a>
         </div>
       </div>

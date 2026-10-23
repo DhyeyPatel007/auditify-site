@@ -6,18 +6,13 @@ import { Scanner, type ScanResult } from "../components/Scanner";
 import { AuthModal } from "../components/AuthModal";
 import { AccountModal } from "../components/AccountModal";
 import { GradeStamp, type Grade } from "../components/Stamps";
-import { PLANS, formatPrice } from "../lib/plans";
-import { startCheckout } from "../lib/paddle";
 import {
   clearReports,
   listReports,
   syncReports,
-  unlockReport,
-  countUnlocked,
   type PastReport,
 } from "../lib/reports";
-import { fetchEntitlements, planName, type Entitlements } from "../lib/entitlements";
-import { downloadReportPDF } from "../lib/pdf";
+import { PrintReportMount, type ReportData } from "../components/ReportPrint";
 
 type MonitoredSite = {
   id?: string;
@@ -42,11 +37,9 @@ function DashboardShell() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [reports, setReports] = useState<PastReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<ScanResult | null>(null);
-  const [buying, setBuying] = useState<string | null>(null);
-  const [buyError, setBuyError] = useState<string | null>(null);
-  const [entitlements, setEntitlements] = useState<Entitlements | null>(null);
-  const [unlockedNotice, setUnlockedNotice] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState<string | null>(null);
+  const [printData, setPrintData] = useState<ReportData | null>(null);
+  const handlePrintDone = useCallback(() => setPrintData(null), []);
   const [confirmClear, setConfirmClear] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
 
@@ -115,79 +108,10 @@ function DashboardShell() {
     };
   }, [user]);
 
-  // Fetch paid entitlements and process auto-unlock
-  useEffect(() => {
-    if (!user) {
-      setEntitlements(null);
-      return;
-    }
-    let cancelled = false;
-
-    const checkAndUnlock = async (attempts = 3) => {
-      try {
-        const e = await fetchEntitlements(() => user.getIdToken());
-        if (cancelled) return;
-        setEntitlements(e);
-
-        // Auto-unlock pending report after payment
-        const pendingRaw = localStorage.getItem(`auditify:pending-unlock:${user.uid}`);
-        if (pendingRaw) {
-          const pending = JSON.parse(pendingRaw) as { url: string; scannedAt?: string };
-          // First, try server-side verification (records webhook-missed purchases)
-          try {
-            const verifyToken = await user.getIdToken();
-            await fetch("/api/verify-purchase", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${verifyToken}`,
-              },
-            });
-            // Refresh entitlements after verification
-            const fresh = await fetchEntitlements(() => user.getIdToken());
-            if (!cancelled) setEntitlements(fresh);
-          } catch {
-            // Non-fatal — proceed with client unlock
-          }
-          const unlocked = unlockReport(user.uid, pending.url, pending.scannedAt);
-          if (unlocked) {
-            localStorage.removeItem(`auditify:pending-unlock:${user.uid}`);
-            setUnlockedNotice(`Full report unlocked for ${pending.url.replace(/^https?:\/\//i, "")}!`);
-            reload();
-          } else if (attempts > 1) {
-            // Retry once after 2 seconds in case transaction webhook is finalizing
-            setTimeout(() => checkAndUnlock(attempts - 1), 2000);
-          }
-        }
-      } catch {
-        if (!cancelled) {
-          setEntitlements({ report: false, reportCredits: 0, monitoring: false, agency: false });
-        }
-      }
-    };
-
-    checkAndUnlock();
-    return () => {
-      cancelled = true;
-    };
-  }, [user, reload]);
-
-  const currentPlan = entitlements ? planName(entitlements) : "Free";
-  const reportCredits = entitlements?.reportCredits ?? 0;
-  const unlockedCount = uid ? countUnlocked(uid) : 0;
-  const availableCredits = Math.max(0, reportCredits - unlockedCount);
-
-  const handleUnlock = (report: PastReport) => {
-    if (!uid || availableCredits <= 0) return;
-    unlockReport(uid, report.url, report.scannedAt);
-    setUnlockedNotice(`Full report unlocked for ${report.host}!`);
-    reload();
-  };
-
   const handleDownloadPDF = async (report: PastReport) => {
-    // SECURITY: Never generate a PDF from local data. Fetch full findings from
-    // the server, which verifies the Firebase token + Paddle payment server-side.
-    // Flipping `unlocked` in localStorage/DevTools cannot bypass this.
+    // Full findings always come from the server, which verifies the
+    // Firebase token. Reports are free — the token (a signed-in user)
+    // is the only gate since payments were removed on 2026-10-23.
     if (!user || pdfLoading) return;
     setPdfLoading(report.url);
     setPdfError(null);
@@ -201,11 +125,14 @@ function DashboardShell() {
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.full) {
         setPdfError(
-          data?.error || "Payment required — unlock this report to download the PDF."
+          data?.error || "Could not load the full report for the PDF. Please try again."
         );
         return;
       }
-      downloadReportPDF({
+      // Open the printable report sheet (browser print dialog → PDF).
+      // White-label branding is free for everyone now — always apply
+      // the user's saved agency name/color.
+      setPrintData({
         host: data.host,
         url: data.url,
         score: data.score,
@@ -214,39 +141,21 @@ function DashboardShell() {
         scannedAt: report.scannedAt,
         summary: data.summary,
         issues: data.issues,
-        // Agency white-label: use custom branding if agency plan is active
-        ...(entitlements?.agency
-          ? { agencyName, agencyColor }
-          : {}),
+        allChecks: data.checks,
+        agencyName,
+        agencyColor,
       });
     } catch {
-      setPdfError("Could not verify payment. Please try again.");
+      setPdfError("Could not load the full report. Please try again.");
     } finally {
       setPdfLoading(null);
     }
   };
 
   const handleViewReport = async (report: PastReport) => {
-    // For locked scans, show the local free version immediately (no server call needed)
-    if (!report.unlocked) {
-      setSelectedReport({
-        url: report.url,
-        host: report.host,
-        score: report.score,
-        grade: report.grade as Grade,
-        checksRun: report.checksRun,
-        durationMs: report.durationMs || 2200,
-        summary: report.summary || { pass: 0, warn: 0, fail: 0 },
-        issues: (report.issues || []).slice(0, 3),
-        locked: [{ title: "Remaining findings locked", metric: "details locked" }],
-        full: false,
-      });
-      window.scrollTo({ top: 180, behavior: "smooth" });
-      return;
-    }
-
-    // SECURITY: Fetch full findings from the server (verifies payment).
-    // Local `unlocked` flag alone is not trusted.
+    // Full findings always come fresh from the server (token-verified).
+    // Every signed-in user gets the full report — no locked state exists
+    // since payments were removed.
     if (!user) return;
     try {
       const idToken = await user.getIdToken();
@@ -258,7 +167,7 @@ function DashboardShell() {
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.full) {
         setPdfError(
-          data?.error || "Payment required — unlock this report to view it."
+          data?.error || "Could not load the full report. Please try again."
         );
         return;
       }
@@ -271,12 +180,13 @@ function DashboardShell() {
         durationMs: data.durationMs || 2200,
         summary: data.summary,
         issues: data.issues,
+        allChecks: data.checks,
         locked: [],
         full: true,
       });
       window.scrollTo({ top: 180, behavior: "smooth" });
     } catch {
-      setPdfError("Could not verify payment. Please try again.");
+      setPdfError("Could not load the full report. Please try again.");
     }
   };
 
@@ -288,29 +198,6 @@ function DashboardShell() {
     });
 
   const firstName = user?.displayName?.split(" ")[0];
-  const paidPlans = PLANS.filter((p) => p.name !== "Free");
-
-  const buyPlan = async (planName: string, forUrl?: string, forScannedAt?: string) => {
-    if (!user) return;
-    if (planName === "One-time report" && forUrl) {
-      try {
-        localStorage.setItem(
-          `auditify:pending-unlock:${user.uid}`,
-          JSON.stringify({ url: forUrl, scannedAt: forScannedAt })
-        );
-      } catch { /* ignore */ }
-    }
-    setBuyError(null);
-    setBuying(planName);
-    try {
-      await startCheckout(planName, () => user.getIdToken());
-    } catch (e) {
-      setBuyError(e instanceof Error ? e.message : "Checkout failed to start.");
-    } finally {
-      setBuying(null);
-    }
-  };
-
   const addMonitoredSite = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = newSiteUrl.trim();
@@ -430,28 +317,13 @@ function DashboardShell() {
               </div>
             )}
 
-            {unlockedNotice && (
-              <div
-                role="status"
-                className="mt-6 flex items-center justify-between rounded-[10px] border border-success/40 bg-success/10 p-4 text-[14px] font-medium text-ink"
-              >
-                <span>{unlockedNotice}</span>
-                <button
-                  type="button"
-                  onClick={() => setUnlockedNotice(null)}
-                  className="text-xs text-muted hover:text-ink"
-                >
-                  ✕ Dismiss
-                </button>
-              </div>
-            )}
 
             <section aria-label="Run a scan" className="mt-10">
               <Scanner
-                onUnlock={(url) => void buyPlan("One-time report", url)}
+                onUnlock={() => {}}
                 uid={uid}
                 onScanComplete={reload}
-                hasFullAccess={!!entitlements && (entitlements.monitoring || entitlements.agency)}
+                hasFullAccess
                 getIdToken={user ? () => user.getIdToken() : undefined}
                 initialReport={selectedReport}
               />
@@ -511,11 +383,6 @@ function DashboardShell() {
                 </p>
               ) : (
                 <>
-                  {availableCredits > 0 && (
-                    <p className="mt-4 rounded-[10px] border border-accent/40 bg-accent/10 p-4 text-[14px] font-medium text-ink">
-                      You have {availableCredits} full report {availableCredits === 1 ? "credit" : "credits"} — click "Unlock full report" on any scan below.
-                    </p>
-                  )}
                   <ul className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {reports.map((r) => (
                       <li
@@ -538,60 +405,23 @@ function DashboardShell() {
                           </p>
                         </div>
                         <div className="mt-5 border-t border-line pt-4">
-                          {r.unlocked ? (
-                            <div className="flex flex-wrap items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleDownloadPDF(r)}
-                                disabled={pdfLoading === r.url}
-                                className="rounded-[8px] bg-accent px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-wait disabled:opacity-70"
-                              >
-                                {pdfLoading === r.url ? "Verifying…" : "Download PDF"}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleViewReport(r)}
-                                className="rounded-[8px] border border-line-strong px-3 py-1.5 text-[12px] font-semibold text-ink transition-colors hover:border-ink"
-                              >
-                                View full
-                              </button>
-                            </div>
-                          ) : availableCredits > 0 ? (
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleUnlock(r)}
-                                className="rounded-[8px] bg-accent px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-accent-hover"
-                              >
-                                Unlock full report
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleViewReport(r)}
-                                className="text-[12px] text-ink-2 hover:text-ink hover:underline"
-                              >
-                                View scan
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                disabled={buying === "One-time report"}
-                                onClick={() => void buyPlan("One-time report", r.url, r.scannedAt)}
-                                className="rounded-[8px] bg-ink px-4 py-2 text-[13px] font-semibold text-paper transition-colors hover:bg-accent disabled:opacity-60"
-                              >
-                                {buying === "One-time report" ? "Opening…" : "Buy to unlock — $15"}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleViewReport(r)}
-                                className="text-[12px] text-ink-2 hover:text-ink hover:underline"
-                              >
-                                View scan
-                              </button>
-                            </div>
-                          )}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadPDF(r)}
+                              disabled={pdfLoading === r.url}
+                              className="rounded-[8px] bg-accent px-3 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-wait disabled:opacity-70"
+                            >
+                              {pdfLoading === r.url ? "Loading…" : "Download PDF"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleViewReport(r)}
+                              className="rounded-[8px] border border-line-strong px-3 py-1.5 text-[12px] font-semibold text-ink transition-colors hover:border-ink"
+                            >
+                              View full
+                            </button>
+                          </div>
                         </div>
                       </li>
                     ))}
@@ -611,16 +441,8 @@ function DashboardShell() {
                     Automated weekly scans, health tracking, and email/Slack alerts when problems arise.
                   </p>
                 </div>
-                {entitlements?.monitoring || entitlements?.agency ? (
-                  <span className="rounded-full bg-success/20 px-3 py-1 font-mono text-[12px] font-semibold text-success">
-                    Active
-                  </span>
-                ) : (
-                  <span className="font-mono text-[12px] text-muted">$12/mo plan</span>
-                )}
+                <span className="rounded-full bg-success/20 px-3 py-1 font-mono text-[12px] font-semibold text-success">Free · included</span>
               </div>
-
-              {entitlements?.monitoring || entitlements?.agency ? (
                 <div className="mt-6 rounded-[10px] border border-line bg-surface p-6">
                   <h3 className="font-display text-[18px] font-semibold">Monitored Websites</h3>
                   {monitoredError && (
@@ -693,27 +515,6 @@ function DashboardShell() {
                     </div>
                   </div>
                 </div>
-              ) : (
-                <div className="mt-6 rounded-[10px] border border-line-strong bg-surface p-6 sm:p-8">
-                  <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
-                    <div className="max-w-[560px]">
-                      <h3 className="font-display text-[20px] font-semibold">Weekly automated monitoring</h3>
-                      <p className="mt-2 text-[14px] leading-relaxed text-ink-2">
-                        Get alerted immediately when deploys cause regressions, images balloon, or certificates near expiration.
-                        Includes up to 3 sites and email/Slack notifications.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={buying === "Monitoring"}
-                      onClick={() => void buyPlan("Monitoring")}
-                      className="min-h-[44px] shrink-0 rounded-lg bg-ink px-6 py-2.5 text-[14px] font-semibold text-paper transition-colors hover:bg-accent disabled:opacity-60"
-                    >
-                      {buying === "Monitoring" ? "Opening…" : "Start monitoring — $12/mo"}
-                    </button>
-                  </div>
-                </div>
-              )}
             </section>
 
             {/* Agency White-Label Section */}
@@ -727,16 +528,8 @@ function DashboardShell() {
                     Client-facing branded reports, custom cover marks, shareable URLs, and website lead-gen embed.
                   </p>
                 </div>
-                {entitlements?.agency ? (
-                  <span className="rounded-full bg-success/20 px-3 py-1 font-mono text-[12px] font-semibold text-success">
-                    Active
-                  </span>
-                ) : (
-                  <span className="font-mono text-[12px] text-muted">$69/mo plan</span>
-                )}
+                <span className="rounded-full bg-success/20 px-3 py-1 font-mono text-[12px] font-semibold text-success">Free · included</span>
               </div>
-
-              {entitlements?.agency ? (
                 <div className="mt-6 grid gap-6 md:grid-cols-2">
                   <div className="rounded-[10px] border border-line bg-surface p-6">
                     <h3 className="font-display text-[18px] font-semibold">Brand Customization</h3>
@@ -807,100 +600,14 @@ function DashboardShell() {
                     </button>
                   </div>
                 </div>
-              ) : (
-                <div className="mt-6 rounded-[10px] border border-line-strong bg-surface p-6 sm:p-8">
-                  <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
-                    <div className="max-w-[560px]">
-                      <h3 className="font-display text-[20px] font-semibold">Sell audits under your brand</h3>
-                      <p className="mt-2 text-[14px] leading-relaxed text-ink-2">
-                        Includes client share links with your logo, white-labeled PDF downloads, up to 25 monitored sites,
-                        and an embeddable audit widget for your website.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={buying === "Agency white-label"}
-                      onClick={() => void buyPlan("Agency white-label")}
-                      className="min-h-[44px] shrink-0 rounded-lg bg-ink px-6 py-2.5 text-[14px] font-semibold text-paper transition-colors hover:bg-accent disabled:opacity-60"
-                    >
-                      {buying === "Agency white-label" ? "Opening…" : "Upgrade to Agency — $69/mo"}
-                    </button>
-                  </div>
-                </div>
-              )}
             </section>
 
-            {/* Plans Section */}
-            <section aria-labelledby="dash-plan" className="mt-14">
-              <h2
-                id="dash-plan"
-                className="font-display text-[28px] font-semibold"
-              >
-                Your plan
-              </h2>
-              <ul className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <li
-                  className={`rounded-[10px] border p-6 ${
-                    currentPlan === "Free"
-                      ? "border-2 border-ink bg-surface"
-                      : "border border-line bg-surface"
-                  }`}
-                >
-                  <p className="font-display text-[20px] font-semibold">Free</p>
-                  <p className="mt-2 font-mono text-[13px] text-ink-2">
-                    {formatPrice(0)}/forever
-                  </p>
-                  {currentPlan === "Free" && (
-                    <p className="mt-4 inline-block rounded-full bg-ink px-3 py-1 text-[12px] font-semibold text-paper">
-                      Current plan
-                    </p>
-                  )}
-                </li>
-                {paidPlans.map((p) => (
-                  <li
-                    key={p.name}
-                    className={`rounded-[10px] border bg-surface p-6 ${
-                      currentPlan === p.name ? "border-2 border-ink" : "border-line"
-                    }`}
-                  >
-                    <p className="font-display text-[20px] font-semibold">
-                      {p.name}
-                    </p>
-                    <p className="mt-2 font-mono text-[13px] text-ink-2">
-                      {formatPrice(p.price)}
-                      {p.per}
-                    </p>
-                    {currentPlan === p.name ? (
-                      <p className="mt-4 inline-block rounded-full bg-ink px-3 py-1 text-[12px] font-semibold text-paper">
-                        Current plan
-                      </p>
-                    ) : p.name === "One-time report" ? (
-                      <p className="mt-4 text-[13px] text-ink-2">
-                        Buy from your scan history above — pick which report to unlock.
-                      </p>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={buying === p.name}
-                        onClick={() => void buyPlan(p.name)}
-                        className="mt-4 rounded-[8px] bg-ink px-4 py-2 text-[13px] font-semibold text-paper transition-colors hover:bg-accent disabled:opacity-60"
-                      >
-                        {buying === p.name ? "Opening…" : "Buy now"}
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              {buyError && (
-                <p className="mt-4 text-[14px] font-medium text-accent">
-                  Checkout couldn&apos;t start: {buyError}
-                </p>
-              )}
-            </section>
+
           </>
         )}
       </main>
       <Footer />
+      {printData && <PrintReportMount report={printData} onDone={handlePrintDone} />}
       <AuthModal
         open={auth.open}
         mode={auth.mode}

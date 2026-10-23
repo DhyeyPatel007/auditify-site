@@ -83,14 +83,14 @@ export function AccountModal({ open, onClose, uid, email, name, onSignOut }: Pro
           </ul>
         )}
         <p className="mt-2 text-[12px] text-muted">
-          Scan history is kept on this device for now; it moves to your account
-          when the paid backend ships.
+          Your scans are saved to your account and listed on your
+          dashboard.
         </p>
 
         <h3 className="eyebrow mt-8 text-ink-2">Monitoring plans</h3>
         <p className="mt-2 text-[14px] text-ink-2">
-          No active monitoring plans. Monitoring opens with Phase 2 checkout —
-          we&rsquo;ll email you when it&rsquo;s live.
+          Monitoring is free — add up to 10 sites from your dashboard
+          and we&rsquo;ll re-scan them weekly.
         </p>
 
         <button

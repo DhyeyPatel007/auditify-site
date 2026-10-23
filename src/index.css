@@ -96,20 +96,8 @@ body {
   }
 }
 
-/* Paddle checkout frame fixes — Paddle.js mispositions its iframe on this
-   page (tiny bottom-left). Force it into a usable centered frame. */
-iframe.paddle-frame {
-  position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  width: min(480px, 94vw) !important;
-  height: min(700px, 92vh) !important;
-  z-index: 2147483647 !important;
-  border: 0 !important;
-  border-radius: 12px !important;
-  background: #fff !important;
-}
+/* (The Paddle checkout frame fixes that used to live here were removed
+   with the payment system — Auditify is free as of 2026-10-23.) */
 
 /* Grade stamp: slight rotation, stamped feel */
 .stamp {
@@ -160,4 +148,40 @@ iframe.paddle-frame {
 .legal-body strong {
   color: var(--color-ink);
   font-weight: 600;
+}
+
+/* ---- Printable report sheet (ReportPrint.tsx) ----
+   The sheet is portaled into document.body only while printing. On screen
+   it never shows; in print the app root is removed from layout entirely
+   (display:none, not visibility) so the sheet paginates cleanly. */
+@media screen {
+  #report-sheet {
+    display: none;
+  }
+}
+
+@media print {
+  /* Only while the sheet is mounted: remove the app from print layout.
+     (The older print block above uses visibility, which would otherwise
+     hide the sheet too — hence the explicit visibility restore.) */
+  body:has(#report-sheet) {
+    background: #fff !important;
+  }
+  body:has(#report-sheet) #root {
+    display: none !important;
+  }
+  #report-sheet {
+    display: block !important;
+    visibility: visible !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #report-sheet * {
+    visibility: visible !important;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 13mm 14mm;
 }

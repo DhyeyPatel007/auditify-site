@@ -21,7 +21,7 @@ type UHeaders = import("undici").Headers;
 import dns from "node:dns/promises";
 import net from "node:net";
 import tls from "node:tls";
-import { verifyFirebaseToken, checkPaddleEntitlements } from "./_lib/auth.js";
+import { verifyFirebaseToken } from "./_lib/auth.js";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -1000,7 +1000,9 @@ export default async function handler(req: ReqLike, res: ResLike) {
     return;
   }
 
-  // Full report requires paid entitlement — verified via Firebase token + Paddle.
+  // Full report is FREE — it only requires a signed-in user (Firebase
+  // token). Payments were removed entirely on 2026-10-23 (owner's call):
+  // no Paddle, no credits, no entitlements. Login is the only gate.
   let isFull = false;
   if (fullReport) {
     if (!idToken) {
@@ -1008,21 +1010,14 @@ export default async function handler(req: ReqLike, res: ResLike) {
       return;
     }
     try {
-      const { email } = await verifyFirebaseToken(idToken);
-      const entitlements = await checkPaddleEntitlements(email);
-      if (!entitlements.report && !entitlements.monitoring && !entitlements.agency) {
-        res.status(403).json({ error: "Full report requires a paid plan or report credit." });
-        return;
-      }
+      await verifyFirebaseToken(idToken);
       isFull = true;
     } catch {
-      res.status(403).json({ error: "Full report requires a paid plan." });
+      res.status(401).json({ error: "Sign in to view the full report." });
       return;
     }
   }
 
-  // No rate limit on free scans — unlimited teasers drive conversions.
-  // The full report (all issues + PDF) requires payment, enforced below.
   // Basic abuse protection: max 30 scans per IP per hour.
   const ip = clientIp(req);
   pruneHourlySeen();
@@ -1098,6 +1093,17 @@ export default async function handler(req: ReqLike, res: ResLike) {
       issues,
       locked,
       full: isFull,
+      // Full reports carry every check (passes included) so the PDF can
+      // print the complete checklist, not just the problems. Free scans
+      // omit it — undefined keys are dropped from the JSON response.
+      checks: isFull
+        ? checks.map((k) => ({
+            id: k.id,
+            title: k.title,
+            severity: k.severity.toUpperCase(),
+            metric: k.metric,
+          }))
+        : undefined,
     });
   } catch (err) {
     const status = err instanceof ScanError ? err.status : 500;
