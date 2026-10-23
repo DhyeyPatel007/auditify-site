@@ -80,12 +80,6 @@ export function Footer() {
             <a href="/privacy" className="transition-colors hover:text-ink">
               Privacy
             </a>
-            <span aria-hidden="true" className="mx-2 text-line-strong">
-              ·
-            </span>
-            <a href="/refund" className="transition-colors hover:text-ink">
-              Refunds
-            </a>
           </p>
         </div>
       </div>
