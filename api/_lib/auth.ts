@@ -1,7 +1,7 @@
 /**
  * Shared server-side authentication: Firebase ID-token verification.
  * Used by /api/scan, /api/monitored, and /api/history.
- * (Paddle entitlements lived here until payments were removed on
+ * (Payment entitlements lived here until payments were removed on
  * 2026-10-23 — full reports are now free for any signed-in user.)
  */
 

@@ -1002,7 +1002,7 @@ export default async function handler(req: ReqLike, res: ResLike) {
 
   // Full report is FREE — it only requires a signed-in user (Firebase
   // token). Payments were removed entirely on 2026-10-23 (owner's call):
-  // no Paddle, no credits, no entitlements. Login is the only gate.
+  // No credits, no entitlements. Login is the only gate.
   let isFull = false;
   if (fullReport) {
     if (!idToken) {

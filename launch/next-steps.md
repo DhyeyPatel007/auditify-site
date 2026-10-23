@@ -1,8 +1,7 @@
 # Auditify — Post-Launch Next Steps (Weeks 1–4)
 
 Launched under **KRYNEX STUDIO** (domain TBD — maybe krynex.in). Product is live,
-scanner is real and accuracy-audited. Payments are NOT wired yet — checkout
-buttons honestly say "opens at launch." This doc is what happens after the
+scanner is real and accuracy-audited. This doc is what happens after the
 24-hour launch sprint, in order.
 
 Rule for all four weeks: **no new features until customers demand them.**
@@ -12,17 +11,10 @@ Talk > build.
 
 ## Week 1 — Money in, ears open
 
-### 1. Paddle live (his lane — do it tomorrow)
-- [ ] Finish Paddle signup + identity verification (passport/govt ID + liveness selfie, PAN, bank proof)
-- [ ] Create 3 products in Paddle: **$15 one-time report**, **$12/mo monitoring**, **$69/mo agency white-label**
-- [ ] Run a test checkout end-to-end in Paddle sandbox
-- [ ] Hand the 3 checkout links to the build side so buttons get wired
-- **Done looks like:** a real $15 test purchase completes and the money path works.
-
 ### 2. Domain decision (by end of week 1)
 Options: `auditify.krynex.in` (keeps everything under the studio, zero cost)
 vs a dedicated domain like `auditify.io` (cleaner SaaS brand, ~$10-15/yr).
-- [ ] Decide. If dedicated: buy, connect to Vercel, set up Zoho Mail on it for a real business email (Paddle receipts + support look legit).
+- [ ] Decide. If dedicated: buy, connect to Vercel, set up Zoho Mail on it for a real business email (support looks legit).
 - [ ] Add "Auditify — a Krynex Studio product" to the footer (light touch, keeps the parent brand visible).
 - **Done looks like:** the site lives on its final URL and support email works.
 

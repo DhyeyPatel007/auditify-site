@@ -14,8 +14,7 @@
  *
  * If config is missing, `auth` is null and `isAuthConfigured()` returns
  * false — the UI shows a graceful "sign-in is being connected" state instead
- * of crashing. Sign-in fully works once the setup checklist in
- * launch/auth-paddle-checklist.md is done.
+ * of crashing. Sign-in fully works once the Firebase env vars are set.
  */
 
 import { initializeApp, type FirebaseApp } from "firebase/app";

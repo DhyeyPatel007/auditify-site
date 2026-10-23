@@ -84,16 +84,7 @@ Tool: auditify.krynex.in
 
 **Reddit:** His Reddit account is banned (per launch/free-marketing-plan.md) — do NOT create a throwaway to post links; that's how accounts die permanently. Skip Reddit until one account is rebuilt slowly with genuine participation.
 
-**The coupon (Paddle):**
-1. FIRST: delete the old 100% test coupon in the Paddle dashboard (still pending — it must go before you mint a new 100%-off code, or you'll mix up redemptions).
-2. Create a new 100%-off coupon, code e.g. BUGBOUNTY, limited redemptions, one use per customer.
-3. Do NOT publish the code in the post — DM it to verified bug finders only, otherwise bots eat it in an hour.
-
-**Email collection flow (automatic):**
-- Even at 100% off, checkout goes through Paddle and the buyer must enter an email.
-- The entitlements endpoint records ALL purchases including $0 coupon redemptions, and you get Paddle's sale email per redemption.
-- That email address IS your email base. Save every one to a spreadsheet the day it lands.
-- Manual fulfillment per his 2026-10-08 call: he gets the sale email, runs the scan / sends the report by hand.
+**Coupons & checkout:** gone — Auditify is free since 2026-10-23. Bug finders just create a free account; the full report unlocks with sign-in, and their account email is the contact.
 
 **Scam guard:** "reproducible bug" only. If someone reports something vague ("site feels slow"), ask for steps. No steps, no coupon.
 

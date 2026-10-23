@@ -1,7 +1,7 @@
 # Auditify — Launch Readiness Audit
 **Date:** 2026-10-05 · **Auditor:** launch-readiness subagent
 **Target:** launch within 24h under **KRYNEX STUDIO** (product: Auditify)
-**Scope:** everything except payments (founder handles Paddle separately tomorrow)
+**Scope:** everything except payments (handled separately)
 **Method:** live site crawl (homepage, /terms, /privacy), source inspection (src/, api/, vercel.json, public/), header/SEO/asset checks, edge-case API tests.
 
 **Verdict:** the engine is launch-grade (35+ checks verified accurate 2026-10-05; SSRF guards verified; security headers strong). The **site chrome is not** — the blockers are all trust/polish items, ~1.5h of work total. Nothing here needs money.
@@ -47,10 +47,10 @@
 
 ---
 
-## SHOULD-HAVE (within days; #8 needed *before* Paddle tomorrow)
+## SHOULD-HAVE (within days)
 
 ### 8. Refund policy page (`/refund` → currently 404)
-Paddle requires a refund policy before payments go live — and he's doing Paddle tomorrow. One short page, link it in the footer Legal column and from the pricing section. **Effort:** 30 min.
+One short page, link it in the footer Legal column and from the pricing section. **Effort:** 30 min.
 
 ### 9. Basic analytics
 Privacy page boasts "no third-party analytics" — true, which means launch traffic is invisible. Vercel Web Analytics (free tier) or Plausible keeps the privacy promise while showing where day-one users come from. **Effort:** 30 min.
@@ -90,4 +90,4 @@ Forward-looking copy ("Delete your account…") for a product with no accounts y
 - "Proudly made in India" footer badge present, as specified.
 
 ## Suggested 24h order
-1. #4 + #5 (10 min, copy fixes) → 2. #1 + #2 + #3 (1 h, footer/branding/contact — one editing session) → 3. #6 domain call → 4. #7 mobile pass → 5. deploy → 6. #10 Lighthouse measurement → launch. #8 refund page before Paddle tomorrow.
+1. #4 + #5 (10 min, copy fixes) → 2. #1 + #2 + #3 (1 h, footer/branding/contact — one editing session) → 3. #6 domain call → 4. #7 mobile pass → 5. deploy → 6. #10 Lighthouse measurement → launch.
